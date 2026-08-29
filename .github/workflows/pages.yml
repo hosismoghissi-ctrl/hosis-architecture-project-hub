@@ -27,10 +27,20 @@ jobs:
         run: node --check app.js
       - name: Validate required files
         run: test -s index.html && test -s styles.css && test -s app.js
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install browser test dependencies
+        run: |
+          npm install
+          npx playwright install --with-deps chromium
+      - name: Run interaction smoke tests
+        run: |
+          python3 -m http.server 4173 >/tmp/hosis-http.log 2>&1 &
+          npm run test:e2e
       - name: Configure Pages
         uses: actions/configure-pages@v5
-        with:
-          enablement: true
       - name: Upload static site
         uses: actions/upload-pages-artifact@v3
         with:
