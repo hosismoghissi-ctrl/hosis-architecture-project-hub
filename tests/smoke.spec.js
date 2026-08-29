@@ -15,7 +15,7 @@ test("admin can navigate projects, tasks, scope and assistant", async ({ page })
   await expect(page.locator(".project-card")).toHaveCount(6);
 
   await page.locator(".project-card").first().click();
-  await expect(page.getByRole("heading", { name: "Charles Studio Workplace" })).toBeVisible();
+  await expect(page.locator(".project-hero h1")).toHaveText("Charles Studio Workplace");
 
   await page.getByRole("button", { name: /Edit Scope/i }).first().click();
   await expect(page.getByRole("dialog")).toBeVisible();
