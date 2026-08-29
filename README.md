@@ -23,4 +23,4 @@ This repository contains demonstration data only. All project names, companies, 
 
 ## Deployment
 
-The included GitHub Pages workflow deploys the static site from the `main` branch.
+The included GitHub Pages workflow validates and deploys the static site from the `main` branch.
