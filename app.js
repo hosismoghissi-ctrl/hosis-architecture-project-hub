@@ -177,118 +177,111 @@ var currentProjectId=null;
 var activeStage=null;
 var currentFilters={query:"",type:"",status:"",priority:"",user:"",high:false};
 var scopeEditingId=null;
-var timers=[];
+var editContext=null;
 
 function clone(value){return JSON.parse(JSON.stringify(value));}
+function uid(prefix){return prefix+"-"+Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
+function isoDate(date){return date.toISOString().slice(0,10);}
+function addDays(date,days){var d=new Date(date+"T12:00:00");d.setDate(d.getDate()+days);return isoDate(d);}
+function defaultSchedule(project,index){
+  var base=addDays("2026-01-12",index*12);
+  var ranges={design:[0,96],admin:[0,315],permit:[66,144],tender:[126,184],construction:[166,326],closeout:[306,355]};
+  return project.scope.map(function(key){var r=ranges[key];return {id:uid("sch"),stage:key,start:addDays(base,r[0]),end:addDays(base,r[1]),status:r[1]<230?"Complete":"Ongoing"};});
+}
+function normalizeProject(project,index){
+  project.assigned=Array.isArray(project.assigned)?project.assigned:[];
+  project.team=Array.isArray(project.team)?project.team:[
+    {id:uid("team"),role:"Client Project Manager",name:project.clientPM||"Not Assigned"},
+    {id:uid("team"),role:"Owner Representative",name:project.ownerRep||"Not Assigned"},
+    {id:uid("team"),role:"Architectural Project Manager",name:project.architectPM||"Not Assigned"},
+    {id:uid("team"),role:"Project Lead",name:project.lead||"Not Assigned"},
+    {id:uid("team"),role:"Mechanical Consultant",name:project.mechanical||"Not Assigned"},
+    {id:uid("team"),role:"Electrical Consultant",name:project.electrical||"Not Assigned"},
+    {id:uid("team"),role:"Structural Consultant",name:project.structural||"Not Assigned"},
+    {id:uid("team"),role:"General Contractor",name:project.contractor||"Not Assigned"}
+  ];
+  project.schedule=Array.isArray(project.schedule)&&project.schedule.length?project.schedule:defaultSchedule(project,index);
+  project.stageItems=project.stageItems||{};
+  project.scope.forEach(function(key){
+    if(!Array.isArray(project.stageItems[key])) project.stageItems[key]=(STAGE_ITEMS[key]||[]).map(function(item){return {id:uid("rec"),title:item[0],detail:item[1],status:item[2],icon:item[3],date:""};});
+  });
+  project.deadlines=Array.isArray(project.deadlines)?project.deadlines:[];
+  project.tasks=Array.isArray(project.tasks)?project.tasks:[];
+  project.activity=Array.isArray(project.activity)?project.activity:[];
+  project.documents=Array.isArray(project.documents)?project.documents:[];
+  project.notes=project.notes||"";
+  return project;
+}
 function loadState(){
-  try{
-    var saved=JSON.parse(localStorage.getItem(KEY));
-    if(saved&&Array.isArray(saved.projects)) return saved;
-  }catch(e){}
-  return {role:null,userId:null,projects:clone(INITIAL_PROJECTS)};
+  var loaded=null;
+  try{loaded=JSON.parse(localStorage.getItem(KEY));}catch(e){}
+  var next=loaded&&Array.isArray(loaded.projects)?loaded:{role:null,userId:null,projects:clone(INITIAL_PROJECTS)};
+  next.projects.forEach(normalizeProject);
+  return next;
 }
 function saveState(){localStorage.setItem(KEY,JSON.stringify(state));}
-function esc(value){
-  return String(value==null?"":value).replace(/[&<>"']/g,function(ch){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[ch];});
-}
+function esc(value){return String(value==null?"":value).replace(/[&<>"']/g,function(ch){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[ch];});}
 function icon(name,cls){return '<i data-lucide="'+name+'"'+(cls?' class="'+cls+'"':'')+'></i>';}
 function refreshIcons(){if(window.lucide) window.lucide.createIcons();}
-function initials(name){return name.split(" ").map(function(x){return x.charAt(0)}).slice(0,2).join("").toUpperCase();}
-function toast(message){
-  var el=document.getElementById("toast");el.textContent=message;el.classList.add("show");
-  setTimeout(function(){el.classList.remove("show")},2200);
-}
-function formatDate(date){
-  return new Date(date+"T12:00:00").toLocaleDateString("en-CA",{month:"short",day:"numeric",year:"numeric"});
-}
+function initials(name){return String(name||"NA").split(" ").map(function(x){return x.charAt(0)}).slice(0,2).join("").toUpperCase();}
+function toast(message){var el=document.getElementById("toast");el.textContent=message;el.classList.add("show");setTimeout(function(){el.classList.remove("show")},2200);}
+function formatDate(date){if(!date)return "No date";return new Date(date+"T12:00:00").toLocaleDateString("en-CA",{month:"short",day:"numeric",year:"numeric"});}
 function allTypes(){return Array.from(new Set(state.projects.map(function(p){return p.type}))).sort();}
 function allStatuses(){return Array.from(new Set(state.projects.map(function(p){return p.status}))).sort();}
-function visibleProjects(){
-  if(state.role==="admin") return state.projects;
-  return state.projects.filter(function(p){return p.assigned.indexOf(state.userId)>-1});
-}
-function priorityClass(p){return p.toLowerCase();}
+function visibleProjects(){if(state.role==="admin")return state.projects;return state.projects.filter(function(p){return p.assigned.indexOf(state.userId)>-1});}
+function priorityClass(value){return String(value||"Medium").toLowerCase();}
 function stageLabel(key){return STAGES[key]?STAGES[key].label:key;}
 function projectById(id){return state.projects.find(function(p){return p.id===id});}
 function stageProgress(project,key){
-  var map={design:68,admin:74,permit:62,tender:54,construction:48,closeout:28};
-  if(project.status==="Complete") return 100;
-  return map[key]||40;
+  var item=project.schedule.find(function(x){return x.stage===key});
+  if(!item)return 0;if(item.status==="Complete")return 100;
+  var start=new Date(item.start),end=new Date(item.end),now=new Date();
+  if(now<=start)return 0;if(now>=end)return 100;
+  return Math.max(0,Math.min(100,Math.round((now-start)/(end-start)*100)));
 }
-function setNav(view){
-  document.querySelectorAll(".nav-item[data-view]").forEach(function(b){b.classList.toggle("active",b.dataset.view===view)});
-}
+function setNav(view){document.querySelectorAll(".nav-item[data-view]").forEach(function(b){b.classList.toggle("active",b.dataset.view===view)});}
 
 function startIntro(){
-  var intro=document.getElementById("intro");
-  function step(index,title,subtitle,cls){
-    intro.className="intro "+(cls||"");
-    document.getElementById("introTitle").textContent=title;
-    document.getElementById("introSubtitle").textContent=subtitle;
-    document.querySelectorAll(".intro-steps span").forEach(function(s,i){s.classList.toggle("active",i<=index)});
-  }
-  timers.push(setTimeout(function(){step(1,"Toronto project network","Toronto · Canada","city")},2400));
-  timers.push(setTimeout(function(){step(2,"A new point of coordination","88 Charles Street, Toronto","city address")},5000));
-  timers.push(setTimeout(function(){step(3,"HOSIS ARCHITECTURE","Project Delivery & Coordination","city address")},7100));
-  timers.push(setTimeout(finishIntro,8700));
+  var video=document.getElementById("introVideo");
+  if(!video){finishIntro();return;}
+  video.addEventListener("ended",finishIntro,{once:true});
+  video.addEventListener("error",function(){setTimeout(finishIntro,1200)},{once:true});
+  var play=video.play();if(play&&play.catch)play.catch(function(){});
 }
-function finishIntro(){
-  timers.forEach(clearTimeout);
-  document.getElementById("intro").classList.add("hidden");
-  document.getElementById("welcome").classList.remove("hidden");
-  refreshIcons();
-}
+function finishIntro(){document.getElementById("introVideo").pause();document.getElementById("intro").classList.add("hidden");document.getElementById("welcome").classList.remove("hidden");refreshIcons();}
 function launch(role,userId){
   state.role=role;state.userId=role==="admin"?null:userId;saveState();
-  document.getElementById("welcome").classList.add("hidden");
-  document.getElementById("app").classList.remove("hidden");
+  document.getElementById("welcome").classList.add("hidden");document.getElementById("app").classList.remove("hidden");
   var user=role==="admin"?{name:"Hosis Admin",role:"Administrator",initials:"HA"}:USERS[userId];
-  document.getElementById("sidebarUserName").textContent=user.name;
-  document.getElementById("sidebarRole").textContent=user.role;
-  document.getElementById("sidebarAvatar").textContent=user.initials;
+  document.getElementById("sidebarUserName").textContent=user.name;document.getElementById("sidebarRole").textContent=user.role;document.getElementById("sidebarAvatar").textContent=user.initials;
   document.getElementById("priorityCount").textContent=visibleProjects().filter(function(p){return p.priority==="High"}).length;
   currentView="dashboard";render();
 }
-
 function render(){
-  if(currentView==="project") renderProject(currentProjectId);
-  else if(currentView==="gallery"||currentView==="priority") renderGallery();
+  if(currentView==="project")renderProject(currentProjectId);
+  else if(currentView==="gallery"||currentView==="priority")renderGallery();
+  else if(currentView==="schedule")renderSchedulePage();
   else renderDashboard();
-  setNav(currentView==="project"?"gallery":currentView);
-  refreshIcons();
-  document.getElementById("content").focus({preventScroll:true});
+  setNav(currentView==="project"?"gallery":currentView);refreshIcons();document.getElementById("content").focus({preventScroll:true});
 }
-function setHeading(breadcrumb,title){
-  document.getElementById("breadcrumb").textContent=breadcrumb;
-  document.getElementById("pageTitle").textContent=title;
-}
-
-function statCard(iconName,value,label){
-  return '<div class="stat-card"><span class="stat-icon">'+icon(iconName)+'</span><strong>'+value+'</strong><small>'+esc(label)+'</small></div>';
-}
+function setHeading(breadcrumb,title){document.getElementById("breadcrumb").textContent=breadcrumb;document.getElementById("pageTitle").textContent=title;}
+function statCard(iconName,value,label){return '<div class="stat-card"><span class="stat-icon">'+icon(iconName)+'</span><strong>'+value+'</strong><small>'+esc(label)+'</small></div>';}
 function renderDashboard(){
   var projects=visibleProjects();
   var high=projects.filter(function(p){return p.priority==="High"}).length;
   var permitDeadlines=projects.reduce(function(n,p){return n+p.deadlines.filter(function(d){return d[2]==="permit"}).length},0);
   var tenderDeadlines=projects.reduce(function(n,p){return n+p.deadlines.filter(function(d){return d[2]==="tender"}).length},0);
   var issues=projects.reduce(function(n,p){return n+p.tasks.filter(function(t){return t[3]==="High"&&!t[4]}).length},0);
-  var overdue=projects.reduce(function(n,p){return n+p.tasks.filter(function(t){return t[4]}).length},0);
+  var overdue=projects.reduce(function(n,p){return n+p.tasks.filter(function(t){return !t[4]&&new Date(t[2])<new Date()}).length},0);
   setHeading("Portfolio / Overview","Project Delivery & Coordination");
-  var recent=[];
-  projects.forEach(function(p){p.activity.forEach(function(a){recent.push({p:p,a:a})})});
-  recent=recent.slice(0,6);
+  var recent=[];projects.forEach(function(p){p.activity.forEach(function(a){recent.push({p:p,a:a})})});recent=recent.slice(0,6);
   var stageCounts={};Object.keys(STAGES).forEach(function(k){stageCounts[k]=projects.filter(function(p){return p.scope.indexOf(k)>-1}).length});
-  var html=
-    '<section class="hero-strip"><div class="hero-copy"><div class="eyebrow">HOSIS ARCHITECTURE</div><h2>Project intelligence,<br>clearly delivered.</h2><p>'+esc(state.role==="admin"?"You are viewing the complete fictional project portfolio.":"You are viewing projects assigned to "+USERS[state.userId].name+".")+'</p></div><div class="hero-actions"><button class="ghost-button" data-go-gallery>'+icon("panels-top-left")+'Explore Projects</button><button class="ghost-button" data-open-ai>'+icon("sparkles")+'Ask Hosis AI</button></div></section>'+
-    '<section class="stat-grid">'+statCard("building-2",projects.length,"Total Active Projects")+statCard("flame",high,"High-Priority Projects")+statCard("badge-check",permitDeadlines,"Permit Deadlines")+statCard("gavel",tenderDeadlines,"Tender Deadlines")+statCard("triangle-alert",issues,"Construction / Delivery Issues")+statCard("clock-alert",overdue,"Overdue Tasks")+'</section>'+
-    '<div class="dashboard-grid"><section class="panel"><div class="panel-head"><h3>Recent Activity</h3><button data-go-gallery>View portfolio</button></div><div class="activity-list">'+
-    recent.map(function(x){return '<div class="activity-row"><span class="activity-icon">'+icon(STAGES[x.a[2]].icon)+'</span><div><strong>'+esc(x.a[0])+'</strong><small>'+esc(x.p.number+" · "+x.p.name)+'</small></div><time>'+esc(x.a[1])+'</time></div>'}).join("")+
-    '</div></section><section class="panel"><div class="panel-head"><h3>Projects by Stage</h3><button data-go-gallery>Filter</button></div><div class="stage-bars">'+
-    Object.keys(STAGES).map(function(k){var pct=projects.length?Math.round(stageCounts[k]/projects.length*100):0;return '<div><div class="stage-bar-head"><span>'+icon(STAGES[k].icon)+' '+esc(STAGES[k].label)+'</span><b>'+stageCounts[k]+'</b></div><div class="stage-track"><div class="stage-fill" style="width:'+pct+'%"></div></div></div>'}).join("")+
-    '</div></section></div>'+
+  var html='<section class="hero-strip"><div class="hero-copy"><div class="eyebrow">HOSIS ARCHITECTURE</div><h2>Project intelligence,<br>clearly delivered.</h2><p>'+esc(state.role==="admin"?"You are viewing the complete fictional project portfolio.":"You are viewing projects assigned to "+USERS[state.userId].name+".")+'</p></div><div class="hero-actions"><button class="ghost-button" data-go-gallery>'+icon("panels-top-left")+'Explore Projects</button><button class="ghost-button" data-go-schedule>'+icon("gantt-chart-square")+'Open Schedule</button><button class="ghost-button" data-open-ai>'+icon("sparkles")+'Ask Hosis AI</button></div></section>'+
+    '<section class="stat-grid">'+statCard("building-2",projects.length,"Total Active Projects")+statCard("flame",high,"High-Priority Projects")+statCard("badge-check",permitDeadlines,"Permit Deadlines")+statCard("gavel",tenderDeadlines,"Tender Deadlines")+statCard("triangle-alert",issues,"Delivery Issues")+statCard("clock-alert",overdue,"Overdue Tasks")+'</section>'+
+    '<section class="panel timeline-preview"><div class="panel-head"><div><h3>Portfolio Schedule</h3><small>Stage dates and overlaps across all visible projects</small></div><button data-go-schedule>Open full timeline</button></div>'+renderTimeline(projects,true)+'</section>'+
+    '<div class="dashboard-grid"><section class="panel"><div class="panel-head"><h3>Recent Activity</h3><button data-go-gallery>View portfolio</button></div><div class="activity-list">'+recent.map(function(x){var s=STAGES[x.a[2]]||STAGES.admin;return '<div class="activity-row"><span class="activity-icon">'+icon(s.icon)+'</span><div><strong>'+esc(x.a[0])+'</strong><small>'+esc(x.p.number+" · "+x.p.name)+'</small></div><time>'+esc(x.a[1])+'</time></div>'}).join("")+'</div></section><section class="panel"><div class="panel-head"><h3>Projects by Stage</h3><button data-go-gallery>Filter</button></div><div class="stage-bars">'+Object.keys(STAGES).map(function(k){var pct=projects.length?Math.round(stageCounts[k]/projects.length*100):0;return '<div><div class="stage-bar-head"><span>'+icon(STAGES[k].icon)+' '+esc(STAGES[k].label)+'</span><b>'+stageCounts[k]+'</b></div><div class="stage-track"><div class="stage-fill stage-'+k+'" style="width:'+pct+'%"></div></div></div>'}).join("")+'</div></section></div>'+
     '<div class="section-title"><div><h2>Featured Projects</h2><p>Visual portfolio of current fictional work.</p></div></div><section class="project-grid">'+projects.slice(0,3).map(projectCard).join("")+'</section>';
-  document.getElementById("content").innerHTML=html;
-  bindCommon();
+  document.getElementById("content").innerHTML=html;bindCommon();
 }
 function projectCard(p){
   return '<button class="project-card" data-project="'+p.id+'"><img src="'+esc(p.image)+'" alt="'+esc(p.name)+'" loading="lazy"><span class="card-top"><span class="card-tags"><span class="pill">'+esc(p.status)+'</span><span class="pill '+priorityClass(p.priority)+'">'+esc(p.priority)+'</span></span><span class="card-arrow">'+icon("arrow-up-right")+'</span></span><span class="card-bottom"><small>'+esc(p.number+" · "+p.type)+'</small><h3>'+esc(p.name)+'</h3><p>'+icon("map-pin")+' '+esc(p.address)+'</p><span class="card-meta"><span>'+p.scope.length+' active stages</span><span>'+p.assigned.map(function(u){return esc(USERS[u].name.split(" ")[0])}).join(" · ")+'</span></span></span></button>';
@@ -317,54 +310,151 @@ function renderGallery(){
   bindProjectCards();
 }
 
-function teamCard(role,name){
-  return '<div class="team-card"><span class="avatar">'+esc(initials(name))+'</span><div><small>'+esc(role)+'</small><strong>'+esc(name)+'</strong></div></div>';
+function timelineBounds(projects){
+  var dates=[];projects.forEach(function(p){p.schedule.forEach(function(s){dates.push(new Date(s.start+"T12:00:00"),new Date(s.end+"T12:00:00"))})});
+  if(!dates.length)return {start:new Date(),end:new Date()};
+  var start=new Date(Math.min.apply(null,dates)),end=new Date(Math.max.apply(null,dates));start.setDate(start.getDate()-10);end.setDate(end.getDate()+10);return {start:start,end:end};
 }
+function timelinePosition(date,bounds){return Math.max(0,Math.min(100,(new Date(date+"T12:00:00")-bounds.start)/(bounds.end-bounds.start)*100));}
+function monthMarkers(bounds){
+  var items=[],cursor=new Date(bounds.start.getFullYear(),bounds.start.getMonth(),1);if(cursor<bounds.start)cursor.setMonth(cursor.getMonth()+1);
+  while(cursor<=bounds.end){items.push({label:cursor.toLocaleDateString("en-CA",{month:"short",year:"2-digit"}),left:(cursor-bounds.start)/(bounds.end-bounds.start)*100});cursor.setMonth(cursor.getMonth()+1)}
+  return items;
+}
+function renderTimeline(projects,compact){
+  var bounds=timelineBounds(projects),months=monthMarkers(bounds);
+  var head='<div class="timeline-head"><div class="timeline-label">PROJECT / STAGE</div><div class="timeline-months">'+months.map(function(m){return '<span style="left:'+m.left+'%">'+esc(m.label)+'</span>'}).join("")+'</div></div>';
+  var rows=projects.map(function(p){
+    var schedule=compact?p.schedule.slice(0,4):p.schedule;
+    var bars=schedule.map(function(s,i){var left=timelinePosition(s.start,bounds),right=timelinePosition(s.end,bounds),width=Math.max(2,right-left);return '<button class="timeline-bar stage-'+s.stage+'" data-project="'+p.id+'" title="'+esc(stageLabel(s.stage)+" · "+formatDate(s.start)+" to "+formatDate(s.end))+'" style="left:'+left+'%;width:'+width+'%;top:'+(i*25+7)+'px"><span>'+icon(STAGES[s.stage].icon)+esc(stageLabel(s.stage))+'</span></button>'}).join("");
+    return '<div class="timeline-row" style="--lanes:'+schedule.length+'"><button class="timeline-project" data-project="'+p.id+'"><strong>'+esc(p.number)+'</strong><small>'+esc(p.name)+'</small></button><div class="timeline-lane">'+months.map(function(m){return '<i style="left:'+m.left+'%"></i>'}).join("")+bars+'</div></div>';
+  }).join("");
+  return '<div class="timeline-scroll"><div class="timeline-canvas">'+head+rows+'<div class="timeline-legend">'+Object.keys(STAGES).map(function(k){return '<span><i class="stage-'+k+'"></i>'+esc(STAGES[k].label)+'</span>'}).join("")+'</div></div></div>';
+}
+function renderSchedulePage(){
+  var projects=visibleProjects();setHeading("Portfolio / Schedule","Project Schedule & Timeline");
+  var html='<div class="section-title schedule-title"><div><div class="eyebrow dark">PORTFOLIO PLANNING</div><h2>Project Schedule</h2><p>Compare dated stages, see current position and identify overlapping work.</p></div><span class="schedule-count">'+projects.length+' active projects</span></div><section class="panel schedule-panel"><div class="timeline-guide">'+icon("info")+' Each colour is a project stage. Horizontal alignment shows work happening at the same time.</div>'+renderTimeline(projects,false)+'</section>';
+  document.getElementById("content").innerHTML=html;bindCommon();
+}
+function adminButton(label,kind,index,extra){return state.role==="admin"?'<button class="tiny-action" data-edit="'+kind+'" data-index="'+index+'" '+(extra||"")+'>'+icon("pencil")+'<span>'+label+'</span></button>':"";}
+function deleteButton(kind,index,extra){return state.role==="admin"?'<button class="icon-button micro danger" data-delete="'+kind+'" data-index="'+index+'" '+(extra||"")+' aria-label="Delete">'+icon("trash-2")+'</button>':"";}
+function teamCard(member,index){return '<div class="team-card"><span class="avatar">'+esc(initials(member.name))+'</span><div><small>'+esc(member.role)+'</small><strong>'+esc(member.name)+'</strong></div><div class="row-actions">'+adminButton("Edit","team",index)+deleteButton("team",index)+'</div></div>';}
 function renderProject(id){
   var p=projectById(id);
   if(!p||visibleProjects().indexOf(p)===-1){currentView="gallery";renderGallery();return}
   if(!activeStage||p.scope.indexOf(activeStage)===-1) activeStage=p.scope[0];
   setHeading("Portfolio / "+p.number,p.name);
-  var scope=p.scope.map(function(k){return '<span class="stage-chip">'+icon(STAGES[k].icon)+esc(STAGES[k].label)+'</span>'}).join("");
-  var tasks=p.tasks.map(function(t){return '<div class="task-row'+(t[4]?" done":"")+'"><button class="task-check" data-task="'+t[0]+'">'+(t[4]?icon("check"):"")+'</button><div><strong>'+esc(t[1])+'</strong><small>'+esc(t[3]+" priority · Due "+formatDate(t[2]))+'</small></div><span class="pill '+priorityClass(t[3])+'">'+esc(t[3])+'</span></div>'}).join("");
-  var activities=p.activity.map(function(a){return '<div class="activity-row"><span class="activity-icon">'+icon(STAGES[a[2]].icon)+'</span><div><strong>'+esc(a[0])+'</strong><small>'+esc(stageLabel(a[2]))+'</small></div><time>'+esc(a[1])+'</time></div>'}).join("");
-  var deadlines=p.deadlines.map(function(d){return '<div class="deadline-row"><span class="deadline-icon">'+icon(STAGES[d[2]].icon)+'</span><div><strong>'+esc(d[0])+'</strong><small>'+esc(stageLabel(d[2]))+'</small></div><time>'+formatDate(d[1])+'</time></div>'}).join("");
-  var docs=p.documents.filter(function(d){return p.scope.indexOf(d[1])>-1}).map(function(d){return '<div class="document-row"><span class="record-icon">'+icon("file-text")+'</span><div><strong>'+esc(d[0])+'</strong><small>'+esc(stageLabel(d[1])+" · "+d[2])+'</small></div><button title="Prototype document">'+icon("external-link")+'</button></div>'}).join("");
-  var assigned=p.assigned.map(function(u){return teamCard("Assigned User",USERS[u].name)}).join("");
+  var scope=p.scope.map(function(k){return '<button class="stage-chip stage-'+k+'" data-stage="'+k+'"><span class="scope-icon">'+icon(STAGES[k].icon)+'</span><strong>'+esc(STAGES[k].label)+'</strong><small>'+stageProgress(p,k)+'% complete</small></button>'}).join("");
+  var tasks=p.tasks.map(function(t,i){return '<div class="task-row'+(t[4]?" done":"")+'"><button class="task-check" data-task="'+t[0]+'">'+(t[4]?icon("check"):"")+'</button><div><strong>'+esc(t[1])+'</strong><small>'+esc(t[3]+" priority · Due "+formatDate(t[2]))+'</small></div><span class="pill '+priorityClass(t[3])+'">'+esc(t[3])+'</span><div class="row-actions">'+adminButton("Edit","tasks",i)+deleteButton("tasks",i)+'</div></div>'}).join("");
+  var activities=p.activity.map(function(a,i){var s=STAGES[a[2]]||STAGES.admin;return '<div class="activity-row"><span class="activity-icon">'+icon(s.icon)+'</span><div><strong>'+esc(a[0])+'</strong><small>'+esc(stageLabel(a[2]))+'</small></div><time>'+esc(a[1])+'</time><div class="row-actions">'+adminButton("Edit","activity",i)+deleteButton("activity",i)+'</div></div>'}).join("");
+  var deadlines=p.deadlines.map(function(d,i){var s=STAGES[d[2]]||STAGES.admin;return '<div class="deadline-row"><span class="deadline-icon">'+icon(s.icon)+'</span><div><strong>'+esc(d[0])+'</strong><small>'+esc(stageLabel(d[2]))+'</small></div><time>'+formatDate(d[1])+'</time><div class="row-actions">'+adminButton("Edit","deadlines",i)+deleteButton("deadlines",i)+'</div></div>'}).join("");
+  var docs=p.documents.map(function(d,i){return {d:d,i:i}}).filter(function(x){return p.scope.indexOf(x.d[1])>-1}).map(function(x){return '<div class="document-row"><span class="record-icon">'+icon("file-text")+'</span><div><strong>'+esc(x.d[0])+'</strong><small>'+esc(stageLabel(x.d[1])+" · "+x.d[2])+'</small></div><div class="row-actions">'+adminButton("Edit","documents",x.i)+deleteButton("documents",x.i)+'</div></div>'}).join("");
   var adminControls=state.role==="admin"?'<select id="statusSelect" class="admin-select" aria-label="Change project status">'+allStatuses().concat(["Complete","On Hold"]).filter(function(v,i,a){return a.indexOf(v)===i}).map(function(v){return '<option'+(v===p.status?" selected":"")+'>'+esc(v)+'</option>'}).join("")+'</select><select id="prioritySelect" class="admin-select" aria-label="Change priority">'+["High","Medium","Low"].map(function(v){return '<option'+(v===p.priority?" selected":"")+'>'+v+' Priority</option>'}).join("")+'</select>':"";
   var html=
-    '<section class="project-hero"><img src="'+esc(p.image)+'" alt="'+esc(p.name)+'"><div class="project-hero-top"><button class="back-button" data-go-gallery>'+icon("arrow-left")+'Project Gallery</button><div class="card-tags"><span class="pill">'+esc(p.status)+'</span><span class="pill '+priorityClass(p.priority)+'">'+esc(p.priority)+' Priority</span></div></div><div class="project-hero-main"><div><div class="eyebrow">'+esc(p.number+" · "+p.type)+'</div><h1>'+esc(p.name)+'</h1><p>'+icon("map-pin")+' '+esc(p.address)+' &nbsp; · &nbsp; '+esc(p.area)+'</p></div><div class="project-hero-actions">'+adminControls+(state.role==="admin"?'<button class="ghost-button" id="editScope">'+icon("sliders-horizontal")+'Edit Scope</button>':'')+'<button class="ghost-button" onclick="window.print()">'+icon("printer")+'Print / PDF</button></div></div></section>'+
+    '<section class="project-hero"><img src="'+esc(p.image)+'" alt="'+esc(p.name)+'"><div class="project-hero-top"><button class="back-button" data-go-gallery>'+icon("arrow-left")+'Project Gallery</button><div class="card-tags"><span class="pill">'+esc(p.status)+'</span><span class="pill '+priorityClass(p.priority)+'">'+esc(p.priority)+' Priority</span></div></div><div class="project-hero-main"><div><div class="eyebrow">'+esc(p.number+" · "+p.type)+'</div><h1>'+esc(p.name)+'</h1><p>'+icon("map-pin")+' '+esc(p.address)+' &nbsp; · &nbsp; '+esc(p.area)+'</p></div><div class="project-hero-actions">'+adminControls+(state.role==="admin"?'<button class="ghost-button" data-edit="project" data-index="-1">'+icon("square-pen")+'Edit Project</button><button class="ghost-button" id="editScope">'+icon("sliders-horizontal")+'Edit Scope</button>':'')+'<button class="ghost-button" onclick="window.print()">'+icon("printer")+'Print / PDF</button></div></div></section>'+
     '<div class="project-layout"><div class="detail-stack">'+
-      '<section class="panel"><div class="panel-head"><h3>Project Overview</h3><span class="pill '+priorityClass(p.priority)+'">'+esc(p.priority)+'</span></div><p style="color:var(--muted);font-size:11px;line-height:1.75">'+esc(p.summary)+'</p><div class="overview-grid">'+
-      [["Project Number",p.number],["Project Type",p.type],["Project Area",p.area],["Client",p.client],["Owner",p.owner],["General Contractor",p.contractor]].map(function(x){return '<div class="info-cell"><small>'+esc(x[0])+'</small><strong>'+esc(x[1])+'</strong></div>'}).join("")+
+      '<section class="panel"><div class="panel-head"><h3>Project Overview</h3>'+(state.role==="admin"?'<button data-edit="project" data-index="-1">'+icon("pencil")+' Edit overview</button>':'<span class="pill '+priorityClass(p.priority)+'">'+esc(p.priority)+'</span>')+'</div><p class="overview-summary">'+esc(p.summary)+'</p><div class="overview-grid">'+
+      [["Project Number",p.number],["Project Type",p.type],["Project Area",p.area],["Client",p.client],["Owner",p.owner],["General Contractor",p.contractor],["Address",p.address],["Current Status",p.status],["Priority",p.priority]].map(function(x){return '<div class="info-cell"><small>'+esc(x[0])+'</small><strong>'+esc(x[1])+'</strong></div>'}).join("")+
       '</div></section>'+
       '<section class="panel"><div class="panel-head"><h3>Project Scope</h3>'+(state.role==="admin"?'<button id="editScopeInline">Edit stages</button>':'')+'</div><div class="scope-stage-list">'+scope+'</div><div class="stage-tabs">'+p.scope.map(function(k){return '<button class="stage-tab'+(activeStage===k?" active":"")+'" data-stage="'+k+'">'+icon(STAGES[k].icon)+esc(STAGES[k].label)+'</button>'}).join("")+'</div><div id="stageContent" class="stage-content">'+renderStageContent(p,activeStage)+'</div></section>'+
-      '<section class="panel"><div class="panel-head"><h3>Project Team</h3><span class="pill">'+(p.assigned.length)+' assigned users</span></div><div class="team-grid">'+
-      teamCard("Client Project Manager",p.clientPM)+teamCard("Owner Representative",p.ownerRep)+teamCard("Architectural Project Manager",p.architectPM)+teamCard("Project Lead",p.lead)+teamCard("Mechanical Consultant",p.mechanical)+teamCard("Electrical Consultant",p.electrical)+teamCard("Structural Consultant",p.structural)+assigned+
-      '</div></section>'+
-      '<section class="panel"><div class="panel-head"><h3>Documents</h3><button>'+p.documents.length+' records</button></div>'+docs+'</section>'+
+      '<section class="panel"><div class="panel-head"><div><h3>Project Schedule</h3><small>Dated stages show sequence and overlap</small></div>'+(state.role==="admin"?'<button data-add="schedule">'+icon("plus")+' Add schedule item</button>':'')+'</div>'+renderProjectSchedule(p)+'</section>'+
+      '<section class="panel"><div class="panel-head"><h3>Project Team</h3>'+(state.role==="admin"?'<button data-add="team">'+icon("user-plus")+' Add team member</button>':'<span class="pill">'+p.assigned.length+' assigned users</span>')+'</div><div class="team-grid">'+p.team.map(teamCard).join("")+'</div></section>'+
+      '<section class="panel"><div class="panel-head"><h3>Documents</h3>'+(state.role==="admin"?'<button data-add="documents">'+icon("file-plus-2")+' Add document</button>':'<span>'+p.documents.length+' records</span>')+'</div>'+docs+'</section>'+
     '</div><aside class="detail-stack">'+
-      '<section class="panel"><div class="panel-head"><h3>Upcoming Deadlines</h3>'+icon("calendar-days")+'</div><div class="deadline-list">'+deadlines+'</div></section>'+
-      '<section class="panel"><div class="panel-head"><h3>Urgent Tasks</h3><span class="pill high">'+p.tasks.filter(function(t){return !t[4]}).length+' open</span></div><div class="task-list">'+tasks+'</div></section>'+
-      '<section class="panel"><div class="panel-head"><h3>Recent Activity</h3>'+icon("activity")+'</div><div class="activity-list">'+activities+'</div></section>'+
-      '<section class="panel notes-box"><div class="panel-head"><h3>Project Notes</h3>'+icon("sticky-note")+'</div><textarea id="projectNotes" placeholder="Add project notes…">'+esc(p.notes)+'</textarea></section>'+
+      '<section class="panel"><div class="panel-head"><h3>Upcoming Deadlines</h3>'+(state.role==="admin"?'<button data-add="deadlines">'+icon("plus")+' Add</button>':icon("calendar-days"))+'</div><div class="deadline-list">'+deadlines+'</div></section>'+
+      '<section class="panel"><div class="panel-head"><h3>Urgent Tasks</h3>'+(state.role==="admin"?'<button data-add="tasks">'+icon("plus")+' Add task</button>':'<span class="pill high">'+p.tasks.filter(function(t){return !t[4]}).length+' open</span>')+'</div><div class="task-list">'+tasks+'</div></section>'+
+      '<section class="panel"><div class="panel-head"><h3>Recent Activity</h3>'+(state.role==="admin"?'<button data-add="activity">'+icon("plus")+' Add</button>':icon("activity"))+'</div><div class="activity-list">'+activities+'</div></section>'+
+      '<section class="panel notes-box"><div class="panel-head"><h3>Project Notes</h3>'+icon("sticky-note")+'</div><textarea id="projectNotes" '+(state.role==="admin"?'':'readonly ')+'placeholder="Add project notes…">'+esc(p.notes)+'</textarea><small class="save-hint">'+(state.role==="admin"?'Saved automatically in this browser.':'Read-only for assigned users.')+'</small></section>'+
     '</aside></div>';
   document.getElementById("content").innerHTML=html;
-  document.querySelectorAll("[data-stage]").forEach(function(b){b.addEventListener("click",function(){activeStage=b.dataset.stage;document.getElementById("stageContent").innerHTML=renderStageContent(p,activeStage);document.querySelectorAll("[data-stage]").forEach(function(x){x.classList.toggle("active",x===b)});refreshIcons()})});
+  document.querySelectorAll("[data-stage]").forEach(function(b){b.addEventListener("click",function(){activeStage=b.dataset.stage;renderProject(p.id)})});
   document.querySelectorAll("[data-task]").forEach(function(b){b.addEventListener("click",function(){var task=p.tasks.find(function(t){return t[0]===b.dataset.task});task[4]=!task[4];saveState();renderProject(p.id);toast(task[4]?"Task marked complete":"Task reopened")})});
-  document.getElementById("projectNotes").addEventListener("change",function(e){p.notes=e.target.value;saveState();toast("Project notes saved locally")});
+  if(state.role==="admin")document.getElementById("projectNotes").addEventListener("change",function(e){p.notes=e.target.value;saveState();toast("Project notes saved locally")});
   if(state.role==="admin"){
     document.getElementById("statusSelect").addEventListener("change",function(e){p.status=e.target.value;saveState();renderProject(p.id);toast("Project status updated")});
     document.getElementById("prioritySelect").addEventListener("change",function(e){p.priority=e.target.value.split(" ")[0];saveState();document.getElementById("priorityCount").textContent=visibleProjects().filter(function(x){return x.priority==="High"}).length;renderProject(p.id);toast("Project priority updated")});
     document.getElementById("editScope").addEventListener("click",function(){openScope(p.id)});
     document.getElementById("editScopeInline").addEventListener("click",function(){openScope(p.id)});
+    bindAdminEditor(p);
   }
   bindCommon();
 }
+function renderProjectSchedule(project){
+  var bounds=timelineBounds([project]),months=monthMarkers(bounds);
+  return '<div class="project-schedule"><div class="project-schedule-head"><span>Stage and dates</span><div>'+months.map(function(m){return '<span style="left:'+m.left+'%">'+esc(m.label)+'</span>'}).join("")+'</div></div>'+project.schedule.map(function(s,i){var left=timelinePosition(s.start,bounds),right=timelinePosition(s.end,bounds);return '<div class="project-schedule-row"><div class="schedule-row-label"><span class="record-icon stage-'+s.stage+'">'+icon(STAGES[s.stage].icon)+'</span><div><strong>'+esc(stageLabel(s.stage))+'</strong><small>'+formatDate(s.start)+' — '+formatDate(s.end)+'</small></div><span class="record-status">'+esc(s.status)+'</span><div class="row-actions">'+adminButton("Edit","schedule",i)+deleteButton("schedule",i)+'</div></div><div class="schedule-row-track">'+months.map(function(m){return '<i style="left:'+m.left+'%"></i>'}).join("")+'<span class="schedule-row-bar stage-'+s.stage+'" style="left:'+left+'%;width:'+Math.max(2,right-left)+'%"></span></div></div>'}).join("")+'</div>';
+}
 function renderStageContent(project,key){
   if(project.scope.indexOf(key)===-1) return "";
-  var items=STAGE_ITEMS[key]||[];
-  return '<div class="panel-head" style="margin-top:18px"><div><h3>'+icon(STAGES[key].icon)+" "+esc(STAGES[key].label)+'</h3><small style="color:var(--muted);font-size:9px">'+esc(STAGES[key].description)+'</small></div><span class="pill">'+stageProgress(project,key)+'% stage progress</span></div><div class="stage-records">'+items.map(function(x){return '<div class="stage-record"><span class="record-icon">'+icon(x[3])+'</span><div><strong>'+esc(x[0])+'</strong><small>'+esc(x[1])+'</small></div><span class="record-status">'+esc(x[2])+'</span></div>'}).join("")+'</div>';
+  var items=project.stageItems[key]||[];
+  return '<div class="panel-head stage-detail-head"><div><h3>'+icon(STAGES[key].icon)+" "+esc(STAGES[key].label)+'</h3><small>'+esc(STAGES[key].description)+'</small></div><div class="stage-head-actions"><span class="pill">'+stageProgress(project,key)+'% stage progress</span>'+(state.role==="admin"?'<button data-add="stageItems" data-stage-key="'+key+'">'+icon("plus")+' Add record</button>':'')+'</div></div><div class="stage-records">'+items.map(function(x,i){return '<div class="stage-record"><span class="record-icon">'+icon(x.icon||STAGES[key].icon)+'</span><div><strong>'+esc(x.title)+'</strong><small>'+esc(x.detail)+(x.date?' · '+formatDate(x.date):'')+'</small></div><span class="record-status">'+esc(x.status)+'</span><div class="row-actions">'+adminButton("Edit","stageItems",i,'data-stage-key="'+key+'"')+deleteButton("stageItems",i,'data-stage-key="'+key+'"')+'</div></div>'}).join("")+'</div>';
+}
+
+function editorConfig(project,kind,index,stageKey){
+  var creating=index<0,item;
+  function stageChoices(){return project.scope.map(function(k){return [k,stageLabel(k)]});}
+  if(kind==="project")return {title:"Edit Project Information",description:"Update overview, access and the project image.",fields:[
+    {name:"number",label:"Project Number",value:project.number},{name:"name",label:"Project Name",value:project.name},{name:"address",label:"Address",value:project.address},{name:"type",label:"Project Type",value:project.type},{name:"area",label:"Project Area",value:project.area},{name:"client",label:"Client",value:project.client},{name:"owner",label:"Owner",value:project.owner},{name:"contractor",label:"General Contractor",value:project.contractor},{name:"status",label:"Current Status",value:project.status},{name:"priority",label:"Priority",type:"select",options:[["High","High"],["Medium","Medium"],["Low","Low"]],value:project.priority},{name:"image",label:"Project Image URL",value:project.image,wide:true},{name:"summary",label:"Project Scope Summary",type:"textarea",value:project.summary,wide:true},{name:"assigned",label:"Assigned Users",type:"checks",options:Object.keys(USERS).map(function(k){return [k,USERS[k].name]}),value:project.assigned,wide:true}
+  ],save:function(v){Object.keys(v).forEach(function(k){project[k]=v[k]})}};
+  if(kind==="team"){
+    item=creating?{id:uid("team"),role:"Consultant",name:""}:project.team[index];
+    return {title:creating?"Add Team Member":"Edit Team Member",fields:[{name:"role",label:"Role / Discipline",value:item.role},{name:"name",label:"Name / Company",value:item.name}],save:function(v){Object.assign(item,v);if(creating)project.team.push(item)}};
+  }
+  if(kind==="schedule"){
+    item=creating?{id:uid("sch"),stage:project.scope[0],start:"2026-09-01",end:"2026-10-01",status:"Not Started"}:project.schedule[index];
+    return {title:creating?"Add Schedule Item":"Edit Schedule Item",description:"Stage bars can overlap when work happens at the same time.",fields:[{name:"stage",label:"Project Stage",type:"select",options:stageChoices(),value:item.stage},{name:"start",label:"Start Date",type:"date",value:item.start},{name:"end",label:"End Date",type:"date",value:item.end},{name:"status",label:"Status",type:"select",options:[["Not Started","Not Started"],["Ongoing","Ongoing"],["Complete","Complete"],["On Hold","On Hold"]],value:item.status}],validate:function(v){return v.end>=v.start?"":"End date must be on or after the start date."},save:function(v){Object.assign(item,v);if(creating)project.schedule.push(item)}};
+  }
+  if(kind==="deadlines"){
+    item=creating?["New Deadline","2026-09-15",project.scope[0]]:project.deadlines[index];
+    return {title:creating?"Add Deadline":"Edit Deadline",fields:[{name:"title",label:"Deadline",value:item[0]},{name:"date",label:"Due Date",type:"date",value:item[1]},{name:"stage",label:"Stage",type:"select",options:stageChoices(),value:item[2]}],save:function(v){var row=[v.title,v.date,v.stage];if(creating)project.deadlines.push(row);else project.deadlines[index]=row}};
+  }
+  if(kind==="tasks"){
+    item=creating?[uid("task"),"New Project Task","2026-09-15","Medium",false]:project.tasks[index];
+    return {title:creating?"Add Project Task":"Edit Project Task",fields:[{name:"title",label:"Task",value:item[1],wide:true},{name:"date",label:"Due Date",type:"date",value:item[2]},{name:"priority",label:"Priority",type:"select",options:[["High","High"],["Medium","Medium"],["Low","Low"]],value:item[3]},{name:"complete",label:"Completed",type:"checkbox",value:item[4]}],save:function(v){var row=[item[0],v.title,v.date,v.priority,v.complete];if(creating)project.tasks.push(row);else project.tasks[index]=row}};
+  }
+  if(kind==="activity"){
+    item=creating?["New project activity","Today",project.scope[0]]:project.activity[index];
+    return {title:creating?"Add Activity":"Edit Activity",fields:[{name:"title",label:"Activity",value:item[0],wide:true},{name:"when",label:"When",value:item[1]},{name:"stage",label:"Stage",type:"select",options:stageChoices(),value:item[2]}],save:function(v){var row=[v.title,v.when,v.stage];if(creating)project.activity.unshift(row);else project.activity[index]=row}};
+  }
+  if(kind==="documents"){
+    item=creating?["New Document",project.scope[0],"PDF · Pending upload"]:project.documents[index];
+    return {title:creating?"Add Document":"Edit Document",fields:[{name:"title",label:"Document Name",value:item[0],wide:true},{name:"stage",label:"Stage",type:"select",options:stageChoices(),value:item[1]},{name:"meta",label:"File Type / Size",value:item[2]}],save:function(v){var row=[v.title,v.stage,v.meta];if(creating)project.documents.push(row);else project.documents[index]=row}};
+  }
+  if(kind==="stageItems"){
+    item=creating?{id:uid("rec"),title:"New Record",detail:"Add record details",status:"Not Started",icon:STAGES[stageKey].icon,date:""}:project.stageItems[stageKey][index];
+    return {title:(creating?"Add ":"Edit ")+stageLabel(stageKey)+" Record",fields:[{name:"title",label:"Record Name",value:item.title,wide:true},{name:"detail",label:"Details / Comment",type:"textarea",value:item.detail,wide:true},{name:"status",label:"Status",value:item.status},{name:"date",label:"Date",type:"date",value:item.date||""}],save:function(v){Object.assign(item,v);if(creating)project.stageItems[stageKey].push(item)}};
+  }
+  return null;
+}
+function fieldHtml(field){
+  var cls='edit-field'+(field.wide?' wide':'');
+  if(field.type==="textarea")return '<label class="'+cls+'"><span>'+esc(field.label)+'</span><textarea name="'+field.name+'">'+esc(field.value)+'</textarea></label>';
+  if(field.type==="select")return '<label class="'+cls+'"><span>'+esc(field.label)+'</span><select name="'+field.name+'">'+field.options.map(function(o){return '<option value="'+esc(o[0])+'"'+(String(o[0])===String(field.value)?' selected':'')+'>'+esc(o[1])+'</option>'}).join("")+'</select></label>';
+  if(field.type==="checks")return '<fieldset class="'+cls+'"><legend>'+esc(field.label)+'</legend><div class="check-grid">'+field.options.map(function(o){return '<label><input type="checkbox" name="'+field.name+'" value="'+esc(o[0])+'"'+(field.value.indexOf(o[0])>-1?' checked':'')+'><span>'+esc(o[1])+'</span></label>'}).join("")+'</div></fieldset>';
+  if(field.type==="checkbox")return '<label class="'+cls+' checkbox-field"><input type="checkbox" name="'+field.name+'"'+(field.value?' checked':'')+'><span>'+esc(field.label)+'</span></label>';
+  return '<label class="'+cls+'"><span>'+esc(field.label)+'</span><input name="'+field.name+'" type="'+(field.type||'text')+'" value="'+esc(field.value)+'" required></label>';
+}
+function openEditor(project,kind,index,stageKey){
+  if(state.role!=="admin")return;var cfg=editorConfig(project,kind,index,stageKey);if(!cfg)return;
+  editContext={project:project,kind:kind,index:index,stageKey:stageKey,config:cfg};
+  document.getElementById("editModalTitle").textContent=cfg.title;document.getElementById("editModalDescription").textContent=cfg.description||"Changes are saved locally in this browser.";
+  document.getElementById("editFields").innerHTML=cfg.fields.map(fieldHtml).join("");document.getElementById("editModal").classList.remove("hidden");refreshIcons();
+}
+function closeEditor(){document.getElementById("editModal").classList.add("hidden");editContext=null;}
+function saveEditor(form){
+  if(!editContext)return;var data=new FormData(form),values={};
+  editContext.config.fields.forEach(function(f){if(f.type==="checks")values[f.name]=data.getAll(f.name);else if(f.type==="checkbox")values[f.name]=data.has(f.name);else values[f.name]=data.get(f.name)});
+  var error=editContext.config.validate?editContext.config.validate(values):"";if(error){toast(error);return}
+  editContext.config.save(values);saveState();var id=editContext.project.id;closeEditor();renderProject(id);toast("Changes saved");
+}
+function deleteRecord(project,kind,index,stageKey){
+  if(!confirm("Delete this record?"))return;
+  if(kind==="stageItems")project.stageItems[stageKey].splice(index,1);else project[kind].splice(index,1);
+  saveState();renderProject(project.id);toast("Record deleted");
+}
+function bindAdminEditor(project){
+  document.querySelectorAll("[data-edit]").forEach(function(b){b.addEventListener("click",function(){openEditor(project,b.dataset.edit,Number(b.dataset.index),b.dataset.stageKey||null)})});
+  document.querySelectorAll("[data-add]").forEach(function(b){b.addEventListener("click",function(){openEditor(project,b.dataset.add,-1,b.dataset.stageKey||null)})});
+  document.querySelectorAll("[data-delete]").forEach(function(b){b.addEventListener("click",function(){deleteRecord(project,b.dataset.delete,Number(b.dataset.index),b.dataset.stageKey||null)})});
 }
 
 function openScope(id){
@@ -378,7 +468,12 @@ function closeScope(){document.getElementById("scopeModal").classList.add("hidde
 function saveScope(){
   var selected=Array.from(document.querySelectorAll("#scopeOptions input:checked")).map(function(x){return x.value});
   if(!selected.length){toast("Select at least one project stage");return}
-  var p=projectById(scopeEditingId);p.scope=selected;saveState();activeStage=selected[0];closeScope();renderProject(p.id);toast("Project scope updated");
+  var p=projectById(scopeEditingId),oldSchedule=p.schedule.slice();p.scope=selected;
+  selected.forEach(function(key){
+    if(!Array.isArray(p.stageItems[key]))p.stageItems[key]=(STAGE_ITEMS[key]||[]).map(function(item){return {id:uid("rec"),title:item[0],detail:item[1],status:item[2],icon:item[3],date:""}});
+    if(!oldSchedule.some(function(s){return s.stage===key})){var last=oldSchedule[oldSchedule.length-1],start=last?addDays(last.end,-14):"2026-09-01";oldSchedule.push({id:uid("sch"),stage:key,start:start,end:addDays(start,60),status:"Not Started"})}
+  });
+  p.schedule=oldSchedule.filter(function(s){return selected.indexOf(s.stage)>-1});saveState();activeStage=selected[0];closeScope();renderProject(p.id);toast("Project scope updated");
 }
 
 function openAi(){
@@ -405,11 +500,13 @@ function sendAi(action,label){
 function bindProjectCards(){document.querySelectorAll("[data-project]").forEach(function(b){b.addEventListener("click",function(){currentProjectId=b.dataset.project;currentView="project";activeStage=null;render()})})}
 function bindCommon(){
   document.querySelectorAll("[data-go-gallery]").forEach(function(b){b.addEventListener("click",function(){currentView="gallery";currentProjectId=null;render()})});
+  document.querySelectorAll("[data-go-schedule]").forEach(function(b){b.addEventListener("click",function(){currentView="schedule";currentProjectId=null;render()})});
   document.querySelectorAll("[data-open-ai]").forEach(function(b){b.addEventListener("click",openAi)});
   bindProjectCards();
 }
 function setupEvents(){
   document.getElementById("skipIntro").addEventListener("click",finishIntro);
+  document.getElementById("toggleIntroSound").addEventListener("click",function(){var video=document.getElementById("introVideo"),button=this;video.muted=!video.muted;button.innerHTML=icon(video.muted?"volume-x":"volume-2")+'<span>'+(video.muted?"Sound off":"Sound on")+'</span>';button.setAttribute("aria-label",video.muted?"Turn intro sound on":"Turn intro sound off");if(!video.muted)video.play();refreshIcons()});
   document.querySelectorAll("[data-role]").forEach(function(b){b.addEventListener("click",function(){launch("admin")})});
   document.getElementById("continueUser").addEventListener("click",function(){launch("user",document.getElementById("welcomeUser").value)});
   document.querySelectorAll(".nav-item[data-view]").forEach(function(b){b.addEventListener("click",function(){currentView=b.dataset.view;currentProjectId=null;if(currentView==="priority"){currentFilters.high=true}else if(currentView==="gallery"){currentFilters.high=false}render();document.getElementById("sidebar").classList.remove("open")})});
@@ -420,10 +517,12 @@ function setupEvents(){
   document.getElementById("aiForm").addEventListener("submit",function(e){e.preventDefault();var input=document.getElementById("aiInput");if(!input.value.trim())return;sendAi("custom",input.value.trim());input.value=""});
   document.getElementById("globalSearch").addEventListener("input",function(e){currentFilters.query=e.target.value;currentView="gallery";currentProjectId=null;render()});
   document.getElementById("switchRole").addEventListener("click",function(){document.getElementById("app").classList.add("hidden");document.getElementById("welcome").classList.remove("hidden");document.getElementById("sidebar").classList.remove("open");refreshIcons()});
-  document.getElementById("resetDemo").addEventListener("click",function(){if(confirm("Reset all prototype edits saved in this browser?")){state={role:state.role,userId:state.userId,projects:clone(INITIAL_PROJECTS)};saveState();currentProjectId=null;currentView="dashboard";render();toast("Prototype data reset")}}); 
+  document.getElementById("resetDemo").addEventListener("click",function(){if(confirm("Reset all prototype edits saved in this browser?")){state={role:state.role,userId:state.userId,projects:clone(INITIAL_PROJECTS)};state.projects.forEach(normalizeProject);saveState();currentProjectId=null;currentView="dashboard";render();toast("Prototype data reset")}});
   document.querySelectorAll("[data-close-modal]").forEach(function(b){b.addEventListener("click",closeScope)});
+  document.querySelectorAll("[data-close-edit]").forEach(function(b){b.addEventListener("click",closeEditor)});
+  document.getElementById("editForm").addEventListener("submit",function(e){e.preventDefault();saveEditor(e.currentTarget)});
   document.getElementById("saveScope").addEventListener("click",saveScope);
-  document.addEventListener("keydown",function(e){if(e.key==="Escape"){closeAi();closeScope()}});
+  document.addEventListener("keydown",function(e){if(e.key==="Escape"){closeAi();closeScope();closeEditor()}});
 }
 
 setupEvents();
