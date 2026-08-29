@@ -13,23 +13,18 @@
 </head>
 <body>
   <div id="intro" class="intro" aria-label="Cinematic introduction">
-    <div class="intro-globe" aria-hidden="true">
-      <div class="stars"></div>
-      <div class="globe"></div>
-      <div class="orbit orbit-a"></div>
-      <div class="orbit orbit-b"></div>
+    <video id="introVideo" class="intro-video" autoplay muted playsinline preload="auto" poster="assets/intro-poster.jpg">
+      <source src="assets/hosis-intro.mp4" type="video/mp4">
+    </video>
+    <div class="intro-video-shade" aria-hidden="true"></div>
+    <div class="intro-brand">
+      <div class="brand-lockup brand-lockup-light">
+        <span class="brand-mark"><i data-lucide="box"></i></span>
+        <span><strong>HOSIS</strong><small>ARCHITECTURE</small></span>
+      </div>
+      <p>PROJECT DELIVERY &amp; COORDINATION</p>
     </div>
-    <div class="intro-city" aria-hidden="true"></div>
-    <div class="intro-grid" aria-hidden="true"></div>
-    <div class="intro-pin" aria-hidden="true"><i data-lucide="map-pin"></i></div>
-    <div class="intro-copy">
-      <div class="eyebrow">GLOBAL PROJECT NETWORK</div>
-      <h1 id="introTitle">Connecting project intelligence</h1>
-      <p id="introSubtitle">Global Map</p>
-    </div>
-    <div class="intro-steps" aria-hidden="true">
-      <span class="active">Global</span><span>Toronto</span><span>88 Charles</span><span>Welcome</span>
-    </div>
+    <button id="toggleIntroSound" class="ghost-button intro-sound" aria-label="Turn intro sound on"><i data-lucide="volume-x"></i><span>Sound off</span></button>
     <button id="skipIntro" class="ghost-button intro-skip">Skip Intro <i data-lucide="arrow-right"></i></button>
   </div>
 
@@ -84,6 +79,7 @@
       <nav class="main-nav" aria-label="Primary">
         <button class="nav-item active" data-view="dashboard"><i data-lucide="layout-dashboard"></i><span>Dashboard</span></button>
         <button class="nav-item" data-view="gallery"><i data-lucide="panels-top-left"></i><span>Project Gallery</span></button>
+        <button class="nav-item" data-view="schedule"><i data-lucide="gantt-chart-square"></i><span>Project Schedule</span></button>
         <button class="nav-item" data-view="priority"><i data-lucide="flame"></i><span>High Priority</span><b id="priorityCount">0</b></button>
       </nav>
       <div class="sidebar-section-label">WORKSPACE</div>
@@ -120,6 +116,15 @@
       <div id="scopeOptions" class="scope-options"></div>
       <div class="modal-actions"><button class="secondary-button" data-close-modal>Cancel</button><button id="saveScope" class="primary-button"><i data-lucide="save"></i>Save Scope</button></div>
     </div>
+  </div>
+
+  <div id="editModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="editModalTitle">
+    <form id="editForm" class="modal-card edit-modal-card">
+      <div class="modal-head"><div><div class="eyebrow dark">ADMIN EDITOR</div><h2 id="editModalTitle">Edit Record</h2></div><button type="button" class="icon-button" data-close-edit><i data-lucide="x"></i></button></div>
+      <p id="editModalDescription">Changes are saved in this browser.</p>
+      <div id="editFields" class="edit-fields"></div>
+      <div class="modal-actions"><button type="button" class="secondary-button" data-close-edit>Cancel</button><button type="submit" class="primary-button"><i data-lucide="save"></i>Save Changes</button></div>
+    </form>
   </div>
 
   <aside id="aiDrawer" class="ai-drawer" aria-hidden="true">
