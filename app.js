@@ -191,7 +191,7 @@ function saveState(){localStorage.setItem(KEY,JSON.stringify(state));}
 function esc(value){
   return String(value==null?"":value).replace(/[&<>"']/g,function(ch){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[ch];});
 }
-function icon(name,cls){return '<i data-lucide="'+name+'"'+(cls?' class="'+cls+'"':"")+"></i>';}
+function icon(name,cls){return '<i data-lucide="'+name+'"'+(cls?' class="'+cls+'"':'')+'></i>';}
 function refreshIcons(){if(window.lucide) window.lucide.createIcons();}
 function initials(name){return name.split(" ").map(function(x){return x.charAt(0)}).slice(0,2).join("").toUpperCase();}
 function toast(message){
