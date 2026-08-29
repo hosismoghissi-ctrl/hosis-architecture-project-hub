@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#0b1220">
+  <meta name="description" content="Hosis Architecture Project Hub — fictional front-end prototype for project delivery and coordination.">
+  <title>HOSIS ARCHITECTURE PROJECT HUB</title>
+  <link rel="preconnect" href="https://images.unsplash.com">
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js" defer></script>
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <div id="intro" class="intro" aria-label="Cinematic introduction">
+    <div class="intro-globe" aria-hidden="true">
+      <div class="stars"></div>
+      <div class="globe"></div>
+      <div class="orbit orbit-a"></div>
+      <div class="orbit orbit-b"></div>
+    </div>
+    <div class="intro-city" aria-hidden="true"></div>
+    <div class="intro-grid" aria-hidden="true"></div>
+    <div class="intro-pin" aria-hidden="true"><i data-lucide="map-pin"></i></div>
+    <div class="intro-copy">
+      <div class="eyebrow">GLOBAL PROJECT NETWORK</div>
+      <h1 id="introTitle">Connecting project intelligence</h1>
+      <p id="introSubtitle">Global Map</p>
+    </div>
+    <div class="intro-steps" aria-hidden="true">
+      <span class="active">Global</span><span>Toronto</span><span>88 Charles</span><span>Welcome</span>
+    </div>
+    <button id="skipIntro" class="ghost-button intro-skip">Skip Intro <i data-lucide="arrow-right"></i></button>
+  </div>
+
+  <main id="welcome" class="welcome hidden">
+    <div class="welcome-media">
+      <div class="brand-lockup brand-lockup-light">
+        <span class="brand-mark"><i data-lucide="box"></i></span>
+        <span><strong>HOSIS</strong><small>ARCHITECTURE</small></span>
+      </div>
+      <div class="welcome-overlay">
+        <div class="eyebrow">PROJECT DELIVERY &amp; COORDINATION</div>
+        <h1>Design clarity.<br>Delivery control.</h1>
+        <p>A visual command centre for architecture, permits, tendering and construction administration.</p>
+        <div class="location-chip"><i data-lucide="map-pin"></i> 88 Charles Street, Toronto · Demo Location</div>
+      </div>
+    </div>
+    <section class="welcome-panel">
+      <div class="welcome-panel-inner">
+        <div class="brand-lockup brand-lockup-dark mobile-brand">
+          <span class="brand-mark"><i data-lucide="box"></i></span>
+          <span><strong>HOSIS</strong><small>ARCHITECTURE</small></span>
+        </div>
+        <div class="eyebrow dark">WELCOME</div>
+        <h2>Welcome to Hosis Architecture Project Hub</h2>
+        <p class="lead">Choose a prototype role to explore the project delivery system.</p>
+        <button class="role-card" data-role="admin">
+          <span class="role-icon admin"><i data-lucide="shield-check"></i></span>
+          <span><strong>Continue as Admin</strong><small>View all projects and manage scope, status and priority.</small></span>
+          <i data-lucide="arrow-up-right"></i>
+        </button>
+        <div class="user-role-card">
+          <span class="role-icon user"><i data-lucide="user-round"></i></span>
+          <span class="user-role-copy"><strong>Continue as User</strong><small>View only projects assigned to a selected demo user.</small></span>
+          <select id="welcomeUser" aria-label="Select demo user">
+            <option value="maya">Maya Chen</option>
+            <option value="liam">Liam Brooks</option>
+            <option value="sofia">Sofia Martinez</option>
+          </select>
+          <button id="continueUser" class="icon-button" aria-label="Continue as selected user"><i data-lucide="arrow-right"></i></button>
+        </div>
+        <div class="prototype-note"><i data-lucide="info"></i><span>Front-end prototype. Roles and project data are fictional; no real authentication or database is connected.</span></div>
+      </div>
+    </section>
+  </main>
+
+  <div id="app" class="app-shell hidden">
+    <aside id="sidebar" class="sidebar">
+      <div class="sidebar-brand">
+        <span class="brand-mark"><i data-lucide="box"></i></span>
+        <span><strong>HOSIS</strong><small>ARCHITECTURE</small></span>
+      </div>
+      <nav class="main-nav" aria-label="Primary">
+        <button class="nav-item active" data-view="dashboard"><i data-lucide="layout-dashboard"></i><span>Dashboard</span></button>
+        <button class="nav-item" data-view="gallery"><i data-lucide="panels-top-left"></i><span>Project Gallery</span></button>
+        <button class="nav-item" data-view="priority"><i data-lucide="flame"></i><span>High Priority</span><b id="priorityCount">0</b></button>
+      </nav>
+      <div class="sidebar-section-label">WORKSPACE</div>
+      <nav class="main-nav" aria-label="Workspace">
+        <button class="nav-item" id="openAiNav"><i data-lucide="sparkles"></i><span>AI Assistant</span></button>
+        <button class="nav-item" id="resetDemo"><i data-lucide="rotate-ccw"></i><span>Reset Demo Data</span></button>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="avatar" id="sidebarAvatar">HA</div>
+        <div><strong id="sidebarUserName">Hosis Admin</strong><small id="sidebarRole">Administrator</small></div>
+        <button id="switchRole" class="icon-button subtle" title="Switch role"><i data-lucide="log-out"></i></button>
+      </div>
+    </aside>
+
+    <header class="topbar">
+      <button id="menuToggle" class="icon-button mobile-menu" aria-label="Toggle menu"><i data-lucide="menu"></i></button>
+      <div class="page-heading">
+        <span id="breadcrumb">Portfolio / Overview</span>
+        <h1 id="pageTitle">Project Delivery &amp; Coordination</h1>
+      </div>
+      <div class="topbar-actions">
+        <div class="global-search"><i data-lucide="search"></i><input id="globalSearch" type="search" placeholder="Search projects, types or numbers"></div>
+        <button id="openAiTop" class="ai-button"><i data-lucide="sparkles"></i><span>AI Assistant</span></button>
+      </div>
+    </header>
+
+    <main id="content" class="content" tabindex="-1"></main>
+  </div>
+
+  <div id="scopeModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="scopeModalTitle">
+    <div class="modal-card">
+      <div class="modal-head"><div><div class="eyebrow dark">ADMIN CONTROL</div><h2 id="scopeModalTitle">Edit Project Scope</h2></div><button class="icon-button" data-close-modal><i data-lucide="x"></i></button></div>
+      <p>Only selected stages and their records will be visible inside this project.</p>
+      <div id="scopeOptions" class="scope-options"></div>
+      <div class="modal-actions"><button class="secondary-button" data-close-modal>Cancel</button><button id="saveScope" class="primary-button"><i data-lucide="save"></i>Save Scope</button></div>
+    </div>
+  </div>
+
+  <aside id="aiDrawer" class="ai-drawer" aria-hidden="true">
+    <div class="ai-head">
+      <div class="ai-orb"><i data-lucide="sparkles"></i></div>
+      <div><div class="eyebrow">HOSIS AI</div><h2>Project Assistant</h2></div>
+      <button id="closeAi" class="icon-button inverse"><i data-lucide="x"></i></button>
+    </div>
+    <div class="ai-context"><span>Prototype assistant</span><b id="aiContextProject">All projects</b></div>
+    <div id="aiConversation" class="ai-conversation">
+      <div class="assistant-message">How can I support project delivery today? Choose a quick action below.</div>
+    </div>
+    <div class="quick-actions">
+      <button data-ai-action="summary"><i data-lucide="align-left"></i>Summarize Project Status</button>
+      <button data-ai-action="overdue"><i data-lucide="clock-alert"></i>Show Overdue Tasks</button>
+      <button data-ai-action="permit"><i data-lucide="badge-check"></i>Prepare Permit Follow-Up</button>
+      <button data-ai-action="consultants"><i data-lucide="users-round"></i>Outstanding Consultant Items</button>
+      <button data-ai-action="report"><i data-lucide="file-chart-column"></i>Generate Weekly Project Report</button>
+    </div>
+    <form id="aiForm" class="ai-form"><input id="aiInput" placeholder="Ask about a project…" autocomplete="off"><button aria-label="Send"><i data-lucide="send"></i></button></form>
+  </aside>
+  <div id="drawerBackdrop" class="drawer-backdrop hidden"></div>
+  <div id="toast" class="toast" role="status"></div>
+</body>
+</html>
