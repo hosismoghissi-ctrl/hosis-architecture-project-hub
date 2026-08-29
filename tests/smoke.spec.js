@@ -1,0 +1,48 @@
+const { test, expect } = require("@playwright/test");
+
+async function skipIntro(page) {
+  await page.goto("http://127.0.0.1:4173", { waitUntil: "domcontentloaded" });
+  await page.getByRole("button", { name: /Skip Intro/i }).click();
+  await expect(page.getByRole("heading", { name: /Welcome to Hosis Architecture Project Hub/i })).toBeVisible();
+}
+
+test("admin can navigate projects, tasks, scope and assistant", async ({ page }) => {
+  await skipIntro(page);
+  await page.getByRole("button", { name: /Continue as Admin/i }).click();
+  await expect(page.getByRole("heading", { name: /Project intelligence/i })).toBeVisible();
+
+  await page.getByRole("button", { name: /Project Gallery/i }).click();
+  await expect(page.locator(".project-card")).toHaveCount(6);
+
+  await page.locator(".project-card").first().click();
+  await expect(page.getByRole("heading", { name: "Charles Studio Workplace" })).toBeVisible();
+
+  await page.getByRole("button", { name: /Edit Scope/i }).first().click();
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await page.getByRole("button", { name: "Cancel" }).click();
+
+  await page.locator("[data-task]").first().click();
+  await expect(page.locator(".task-row").first()).toHaveClass(/done/);
+
+  await page.getByRole("button", { name: /AI Assistant/i }).last().click();
+  await page.getByRole("button", { name: /Summarize Project Status/i }).click();
+  await expect(page.locator(".assistant-message").last()).toContainText("HAP-2601");
+});
+
+test("assigned user sees only their projects", async ({ page }) => {
+  await skipIntro(page);
+  await page.selectOption("#welcomeUser", "maya");
+  await page.locator("#continueUser").click();
+  await page.getByRole("button", { name: /Project Gallery/i }).click();
+  await expect(page.locator(".project-card")).toHaveCount(3);
+  await expect(page.getByRole("button", { name: /Reset Demo Data/i })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Edit Scope/i })).toHaveCount(0);
+});
+
+test("mobile layout does not overflow", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await skipIntro(page);
+  await page.getByRole("button", { name: /Continue as Admin/i }).click();
+  const sizes = await page.evaluate(() => ({ scroll: document.documentElement.scrollWidth, client: document.documentElement.clientWidth }));
+  expect(sizes.scroll).toBeLessThanOrEqual(sizes.client + 1);
+});
