@@ -29,6 +29,36 @@ test("admin can navigate projects, tasks, scope and assistant", async ({ page })
   await expect(page.locator(".assistant-message").last()).toContainText("HAP-2601");
 });
 
+test("admin can edit records and schedule dates", async ({ page }) => {
+  await skipIntro(page);
+  await page.getByRole("button", { name: /Continue as Admin/i }).click();
+  await page.getByRole("button", { name: /Project Gallery/i }).click();
+  await page.locator(".project-card").first().click();
+
+  await expect(page.locator(".stage-chip")).toHaveCount(6);
+  await expect(page.locator(".project-schedule-row")).toHaveCount(6);
+
+  await page.getByRole("button", { name: /Add task/i }).click();
+  await page.locator('#editForm input[name="title"]').fill("Coordinate fictional signage package");
+  await page.getByRole("button", { name: /Save Changes/i }).click();
+  await expect(page.getByText("Coordinate fictional signage package")).toBeVisible();
+
+  await page.getByRole("button", { name: /Add schedule item/i }).click();
+  await page.locator('#editForm input[name="start"]').fill("2026-10-01");
+  await page.locator('#editForm input[name="end"]').fill("2026-11-15");
+  await page.getByRole("button", { name: /Save Changes/i }).click();
+  await expect(page.locator(".project-schedule-row")).toHaveCount(7);
+});
+
+test("portfolio schedule shows projects and overlapping stage bars", async ({ page }) => {
+  await skipIntro(page);
+  await page.getByRole("button", { name: /Continue as Admin/i }).click();
+  await page.getByRole("button", { name: /Project Schedule/i }).click();
+  await expect(page.getByRole("heading", { name: "Project Schedule", exact: true })).toBeVisible();
+  await expect(page.locator(".timeline-row")).toHaveCount(6);
+  await expect(page.locator(".timeline-bar").first()).toBeVisible();
+});
+
 test("assigned user sees only their projects", async ({ page }) => {
   await skipIntro(page);
   await page.selectOption("#welcomeUser", "maya");
@@ -37,6 +67,7 @@ test("assigned user sees only their projects", async ({ page }) => {
   await expect(page.locator(".project-card")).toHaveCount(3);
   await expect(page.getByRole("button", { name: /Reset Demo Data/i })).toBeVisible();
   await expect(page.getByRole("button", { name: /Edit Scope/i })).toHaveCount(0);
+  await expect(page.locator("[data-add]")).toHaveCount(0);
 });
 
 test("mobile layout does not overflow", async ({ page }) => {
