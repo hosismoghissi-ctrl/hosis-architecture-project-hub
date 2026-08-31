@@ -4,10 +4,12 @@ A standalone, responsive front-end prototype for architectural project delivery 
 
 ## Prototype features
 
-- Full-screen annotated architectural video intro, with Skip, Pause, Replay and reduced-motion support
+- One full-screen entry experience: the annotated architectural video and Admin/User role selection share the same surface, with Skip, Pause, Replay and reduced-motion support
 - Admin and assigned-user role simulation
 - Six entirely fictional projects and organizations
 - Portfolio project gallery with search and filters
+- Dashboard project tasks sorted by priority and due date, followed by the portfolio schedule
+- Client, consultant and contractor directories with company profiles, project-specific contacts and related projects
 - Project-specific stage scope with hidden out-of-scope workflows
 - Admin controls for scope, status, priority and assigned users
 - Portfolio and project-level Gantt timelines with editable dates and visible overlaps
@@ -37,11 +39,11 @@ Run `npm ci`, then `npm run dev`. Browser tests use Google Chrome for H.264 play
 
 ## Cinematic intro
 
-- The intro plays the supplied `assets/hosis-intro-annotated.mp4` (1280×720, about 5 seconds, no audio track).
+- The entry screen plays the supplied `assets/hosis-intro-annotated.mp4` (1280×720, about 5 seconds, no audio track) behind the role selection; there is no separate photo-based welcome page.
 - The whole frame is preserved with `object-fit: contain`, including the architectural annotations on mobile.
 - `src/intro/videoConfig.ts` selects the video, matching poster, and versioned session key. The app's `finishIntro` uses the same key.
-- Muted inline autoplay, Pause/Resume, Skip and Replay preserve the existing role-selection flow. Autoplay denial offers a Play button; video failure still offers entry.
-- Reduced motion shows a static poster and welcome controls without requesting the video.
+- Muted inline autoplay, Pause/Resume, Skip and Replay preserve role selection on the same screen. Autoplay denial offers a Play button; video failure never blocks entry.
+- Reduced motion shows the matching static poster with the same role controls without requesting the video.
 - Map rendering is no longer loaded by the entry bundle. Prior map modules and assets remain available for recovery.
 - Intro controls dispatch `hosis:intro:enter`; `hosis:intro:closed` unmounts and stops playback; `hosis:intro:replay` remounts it.
 

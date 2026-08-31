@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ArrowRight, ArrowUpRight, Box, Pause, Play, RotateCcw } from 'lucide-react';
+import { ArrowUpRight, Box, Pause, Play, RotateCcw } from 'lucide-react';
 import { INTRO } from './videoConfig';
 
 export function CinematicIntro() {
@@ -17,6 +17,12 @@ export function CinematicIntro() {
     const change = () => setReduced(preference.matches);
     preference.addEventListener('change', change);
     return () => preference.removeEventListener('change', change);
+  }, []);
+
+  useEffect(() => {
+    const restart = () => setReplay(value => value + 1);
+    document.addEventListener('hosis:intro:replay', restart);
+    return () => document.removeEventListener('hosis:intro:replay', restart);
   }, []);
 
   useEffect(() => {
@@ -70,30 +76,22 @@ export function CinematicIntro() {
       onPlay={() => setPaused(false)} onPause={() => setPaused(true)}
       onTimeUpdate={event => { const media = event.currentTarget; if (media.duration) setProgress(media.currentTime / media.duration); }}
       onEnded={() => { setProgress(1); setFinished(true); }} />}
-    {finished && <div className="cinematic-shade" aria-hidden="true" />}
+    <div className="cinematic-shade" aria-hidden="true" />
     <header className="cinematic-header flex items-center justify-between">
       <div className="cinematic-logo flex items-center gap-3"><Box size={31} strokeWidth={1.25} aria-hidden="true" /><span>HOSIS<small>ARCHITECTURE</small></span></div>
       <button className="cinematic-skip flex items-center gap-3" onClick={enter}>Skip Intro <ArrowUpRight size={16} aria-hidden="true" /></button>
     </header>
-    {finished && <div className="cinematic-welcome">
-      <div className="cinematic-eyebrow"><span /> ARCHITECTURE, IN CONTEXT</div>
-      <h1>Welcome to<br /><span>Hosis Architecture</span><br />Project Hub.</h1>
-      <p>Project Delivery & Coordination</p>
-      <div className="cinematic-actions flex items-center gap-3 flex-wrap">
-        <button className="cinematic-enter flex items-center gap-3" onClick={enter}>Enter Project Hub <ArrowRight size={18} aria-hidden="true" /></button>
-        <button className="cinematic-replay flex items-center gap-2" onClick={() => setReplay(value => value + 1)} disabled={reduced}><RotateCcw size={15} aria-hidden="true" />{reduced ? 'Reduced motion' : 'Replay Intro'}</button>
-      </div>
-      {fallback && <p className="cinematic-fallback" role="status">{fallback}</p>}
-    </div>}
     <footer className="cinematic-footer">
-      <span className="cinematic-film-label">ARCHITECTURE IN MOTION</span>
+      <span className="cinematic-film-label">{reduced ? 'REDUCED MOTION' : 'ARCHITECTURE IN MOTION'}</span>
       <div className="cinematic-playback flex items-center gap-4">
         {!finished && <button onClick={togglePause} aria-label={paused ? 'Resume intro' : 'Pause intro'}>{paused ? <Play size={15} /> : <Pause size={15} />}</button>}
+        <button onClick={() => setReplay(value => value + 1)} disabled={reduced} aria-label="Replay Intro"><RotateCcw size={15} /></button>
         <span>{finished ? '100' : String(Math.round(progress * 100)).padStart(2, '0')}%</span>
         <span className="cinematic-signal">{finished ? 'WELCOME' : paused ? 'PAUSED' : ready ? 'PLAYING' : 'LOADING VIDEO'}</span>
       </div>
       <div className="cinematic-progress"><div style={{ transform: `scaleX(${finished ? 1 : progress})` }} /></div>
     </footer>
-    <span className="sr-only" aria-live="polite">{finished ? 'Welcome to Hosis Architecture Project Hub' : paused ? 'Intro paused. Select Resume intro to play.' : ''}</span>
+    {fallback && <p className="cinematic-fallback" role="status">{fallback}</p>}
+    <span className="sr-only" aria-live="polite">{finished ? 'Intro complete. Choose an Admin or User workspace.' : paused ? 'Intro paused. Select Resume intro to play.' : ''}</span>
   </section>;
 }

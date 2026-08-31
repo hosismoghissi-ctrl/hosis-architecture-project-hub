@@ -1,97 +1,99 @@
 const { test, expect } = require('@playwright/test');
 const site = 'http://127.0.0.1:4173';
-const sessionKey = 'hosis-video-annotated-seen-v1';
 
-test('supplied video plays, pauses, finishes and replays', async ({ page }) => {
+test('single entry screen keeps role controls over the supplied video through playback and replay', async ({ page }) => {
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
-  page.on('response', response => { if (response.url().includes('.mp4')) console.log('VIDEO RESPONSE', response.status(), response.url(), response.headers()['content-type']); });
   await page.goto(site);
   const video = page.locator('video.cinematic-video');
   await expect(video).toHaveAttribute('src', /hosis-intro-annotated.mp4$/);
-  try {
-    await expect.poll(() => video.evaluate(v => v.currentTime)).toBeGreaterThan(0);
-  } finally {
-    console.log('VIDEO DIAGNOSTICS', await video.evaluate(v => ({ src: v.currentSrc, error: v.error && { code: v.error.code, message: v.error.message }, ready: v.readyState, network: v.networkState, codec: v.canPlayType('video/mp4; codecs="avc1.64001f"') })));
-  }
-  await page.getByRole('button', { name: 'Pause intro' }).click();
+  await expect(page.locator('#intro #welcome')).toBeVisible();
+  await expect(page.locator('.welcome-media')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Continue as Admin' })).toBeVisible();
+  await expect.poll(() => video.evaluate(v => v.currentTime)).toBeGreaterThan(0);
+  await page.getByRole('button', { name: 'Pause intro', exact: true }).click();
   await expect(video).toHaveJSProperty('paused', true);
-  await page.screenshot({ path: 'test-results/video-intro-desktop.png' });
+  await page.screenshot({ path: 'test-results/unified-entry-desktop.png' });
   await page.getByRole('button', { name: 'Resume intro' }).click();
-  await expect(page.getByRole('button', { name: 'Enter Project Hub' })).toBeVisible({ timeout: 15000 });
+  await expect(video).toHaveJSProperty('ended', true, { timeout: 15000 });
   await expect(page.locator('.cinematic-fallback')).toHaveCount(0);
-  await page.screenshot({ path: 'test-results/video-intro-welcome.png' });
+  await expect(page.locator('#welcome')).toBeVisible();
   await page.getByRole('button', { name: 'Replay Intro', exact: true }).click();
-  await expect(page.getByRole('button', { name: 'Enter Project Hub' })).toHaveCount(0);
   await expect.poll(() => video.evaluate(v => !v.paused && v.currentTime > 0 && v.currentTime < 4)).toBe(true);
+  await expect(page.locator('#welcome')).toBeVisible();
+  await page.getByRole('button', { name: 'Continue as Admin' }).click();
+  await expect(page.locator('#app')).toBeVisible();
+  await expect(page.locator('#intro')).toBeHidden();
+  await expect(page.locator('video')).toHaveCount(0);
   expect(errors).toEqual([]);
 });
 
-test('skip works before video loads and replay preserves role selection', async ({ page }) => {
-  await page.route('**/hosis-intro-annotated.mp4', route => route.abort());
+test('skip focuses the same role panel and role switching returns to the same video entry', async ({ page }) => {
   await page.goto(site);
-  await page.getByRole('button', { name: /Skip Intro/i }).click();
-  await expect(page.getByRole('button', { name: 'Continue as Admin' })).toBeVisible();
-  await expect(page.locator('video')).toHaveCount(0);
-  expect(await page.evaluate(key => sessionStorage.getItem(key), sessionKey)).toBe('1');
-  await page.getByRole('button', { name: /Replay Intro/i }).click();
-  await expect(page.getByRole('button', { name: /Skip Intro/i })).toBeVisible();
+  await page.getByRole('button', { name: 'Skip Intro' }).click();
+  await expect(page.locator('#welcomeTitle')).toBeFocused();
+  await expect(page.locator('#intro')).toBeVisible();
+  await page.locator('#welcomeUser').selectOption('liam');
+  await page.locator('#continueUser').click();
+  await expect(page.locator('#sidebarUserName')).toHaveText('Liam Brooks');
+  await page.getByRole('button', { name: 'Switch role' }).click();
+  await expect(page.locator('#intro #welcome')).toBeVisible();
+  await expect(page.locator('#welcomeUser')).toHaveValue('liam');
+  await expect(page.locator('video.cinematic-video')).toHaveCount(1);
+  await page.getByRole('button', { name: 'Continue as Admin' }).click();
+  await expect(page.locator('#sidebarUserName')).toHaveText('Hosis Admin');
 });
 
-test('completed video session goes straight to role selection', async ({ page }) => {
-  await page.addInitScript(key => sessionStorage.setItem(key, '1'), sessionKey);
+test('old session flags do not hide the unified welcome screen', async ({ page }) => {
+  await page.addInitScript(() => {
+    sessionStorage.setItem('hosis-video-annotated-seen-v1', '1');
+    sessionStorage.setItem('hosis-cinematic-seen-v1', '1');
+  });
   await page.goto(site);
-  await expect(page.locator('#welcome')).toBeVisible();
-  await expect(page.locator('#intro')).toBeHidden();
-  await expect(page.locator('video')).toHaveCount(0);
+  await expect(page.locator('#intro #welcome')).toBeVisible();
+  await expect(page.locator('video.cinematic-video')).toHaveCount(1);
 });
 
-test('viewing the old map intro does not skip the new video', async ({ page }) => {
-  await page.addInitScript(() => sessionStorage.setItem('hosis-cinematic-seen-v1', '1'));
-  await page.goto(site);
-  await expect(page.locator('video.cinematic-video')).toBeVisible();
-});
-
-test('reduced motion uses matching static poster without loading video or map', async ({ page }) => {
+test('reduced motion uses only the matching poster and still allows direct entry', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   const requests = [];
   page.on('request', request => { if (/\.mp4|openfreemap/.test(request.url())) requests.push(request.url()); });
   await page.goto(site);
-  await expect(page.getByRole('button', { name: 'Enter Project Hub' })).toBeVisible();
   await expect(page.locator('.cinematic-video-poster')).toHaveAttribute('src', /hosis-intro-annotated-poster.jpg$/);
+  await expect(page.locator('video')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Replay Intro' })).toBeDisabled();
+  await page.getByRole('button', { name: 'Continue as Admin' }).click();
+  await expect(page.locator('#app')).toBeVisible();
   expect(requests).toHaveLength(0);
-  await page.getByRole('button', { name: 'Enter Project Hub' }).click();
-  await expect(page.locator('#welcome')).toBeVisible();
 });
 
-test('video failure offers immediate entry', async ({ page }) => {
+test('failed media and blocked autoplay never block selecting a role', async ({ page }) => {
   await page.route('**/hosis-intro-annotated.mp4', route => route.abort());
   await page.goto(site);
-  await expect(page.getByRole('button', { name: 'Enter Project Hub' })).toBeVisible({ timeout: 15000 });
   await expect(page.getByText('The video could not load. You can still enter the hub.')).toBeVisible();
-});
-
-test('autoplay denial offers manual playback without blocking entry', async ({ page }) => {
+  await page.getByRole('button', { name: 'Continue as Admin' }).click();
+  await expect(page.locator('#app')).toBeVisible();
+  await page.unroute('**/hosis-intro-annotated.mp4');
   await page.addInitScript(() => {
     HTMLMediaElement.prototype.play = () => Promise.reject(new DOMException('Autoplay blocked', 'NotAllowedError'));
   });
   await page.goto(site);
   await expect(page.getByRole('button', { name: 'Resume intro' })).toBeVisible();
-  await page.getByRole('button', { name: 'Skip Intro' }).click();
-  await expect(page.locator('#welcome')).toBeVisible();
+  await page.locator('#continueUser').click();
+  await expect(page.locator('#app')).toBeVisible();
 });
 
-test('mobile video keeps the full frame and welcome fits portrait and landscape', async ({ page }) => {
-  await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto(site);
-  await expect(page.locator('video')).toHaveCSS('object-fit', 'contain');
-  await page.getByRole('button', { name: 'Pause intro' }).click();
-  await page.screenshot({ path: 'test-results/video-intro-mobile.png' });
+test('entry remains usable on narrow phones and short landscape screens', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
-  for (const size of [{ width: 390, height: 844 }, { width: 844, height: 390 }]) {
+  for (const size of [{ width: 375, height: 844 }, { width: 844, height: 390 }, { width: 1440, height: 960 }]) {
     await page.setViewportSize(size);
-    await expect(page.getByRole('button', { name: 'Enter Project Hub' })).toBeInViewport();
+    await page.goto(site);
+    await expect(page.locator('.cinematic-video-poster')).toHaveCSS('object-fit', 'contain');
     const width = await page.evaluate(() => [document.documentElement.scrollWidth, innerWidth]);
     expect(width[0]).toBeLessThanOrEqual(width[1]);
+    if (size.width === 375) await page.screenshot({ path: 'test-results/unified-entry-mobile.png' });
+    await page.locator('#welcomeUser').selectOption('sofia');
+    await page.locator('#continueUser').click();
+    await expect(page.locator('#sidebarUserName')).toHaveText('Sofia Martinez');
   }
 });

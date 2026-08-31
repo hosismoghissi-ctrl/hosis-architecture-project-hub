@@ -210,6 +210,8 @@ var KEY="hosisHubPrototypeV1";
 var state=loadState();
 var currentView="dashboard";
 var currentProjectId=null;
+var currentDirectory="clients";
+var currentCompanyKey=null;
 var activeStage=null;
 var currentFilters={query:"",type:"",status:"",priority:"",user:"",high:false};
 var scopeEditingId=null;
@@ -302,20 +304,13 @@ function stageProgress(project,key){
 function setNav(view){document.querySelectorAll(".nav-item[data-view]").forEach(function(b){b.classList.toggle("active",b.dataset.view===view)});}
 
 function startIntro(){
-  document.addEventListener("hosis:intro:enter",finishIntro);
-  var fallback=document.getElementById("introFallback");
-  if(fallback)fallback.addEventListener("click",finishIntro);
-}
-function finishIntro(){
-  document.getElementById("intro").classList.add("hidden");
-  document.getElementById("welcome").classList.remove("hidden");
-  try{sessionStorage.setItem("hosis-video-annotated-seen-v1","1")}catch(e){}
-  document.dispatchEvent(new Event("hosis:intro:closed"));
-  var heading=document.querySelector(".welcome-panel h2");heading.setAttribute("tabindex","-1");heading.focus();refreshIcons();
+  document.addEventListener("hosis:intro:enter",function(){
+    document.getElementById("welcomeTitle").focus({preventScroll:true});
+  });
 }
 function launch(role,userId){
   state.role=role;state.userId=role==="admin"?null:userId;saveState();
-  document.getElementById("welcome").classList.add("hidden");document.getElementById("app").classList.remove("hidden");
+  document.getElementById("intro").classList.add("hidden");document.dispatchEvent(new Event("hosis:intro:closed"));document.getElementById("app").classList.remove("hidden");
   var user=role==="admin"?{name:"Hosis Admin",role:"Administrator",initials:"HA"}:USERS[userId];
   document.getElementById("sidebarUserName").textContent=user.name;document.getElementById("sidebarRole").textContent=user.role;document.getElementById("sidebarAvatar").textContent=user.initials;
   document.getElementById("priorityCount").textContent=visibleProjects().filter(function(p){return p.priority==="High"}).length;
@@ -325,8 +320,10 @@ function render(){
   if(currentView==="project")renderProject(currentProjectId);
   else if(currentView==="gallery"||currentView==="priority")renderGallery();
   else if(currentView==="schedule")renderSchedulePage();
+  else if(DIRECTORIES[currentView]){currentDirectory=currentView;renderDirectory();}
+  else if(currentView==="company")renderCompanyProfile();
   else renderDashboard();
-  setNav(currentView==="project"?"gallery":currentView);refreshIcons();document.getElementById("content").focus({preventScroll:true});
+  setNav(currentView==="project"?"gallery":currentView==="company"?currentDirectory:currentView);refreshIcons();document.getElementById("content").focus({preventScroll:true});
 }
 function setHeading(breadcrumb,title){document.getElementById("breadcrumb").textContent=breadcrumb;document.getElementById("pageTitle").textContent=title;}
 function statCard(iconName,value,label){return '<div class="stat-card"><span class="stat-icon">'+icon(iconName)+'</span><strong>'+value+'</strong><small>'+esc(label)+'</small></div>';}
@@ -338,15 +335,87 @@ function renderDashboard(){
   var issues=projects.reduce(function(n,p){return n+p.tasks.filter(function(t){return t[3]==="High"&&!t[4]}).length},0);
   var overdue=projects.reduce(function(n,p){return n+p.tasks.filter(function(t){return !t[4]&&new Date(t[2])<new Date()}).length},0);
   setHeading("Portfolio / Overview","Project Delivery & Coordination");
-  var recent=[];projects.forEach(function(p){p.activity.forEach(function(a){recent.push({p:p,a:a})})});recent=recent.slice(0,6);
   var stageCounts={};Object.keys(STAGES).forEach(function(k){stageCounts[k]=projects.filter(function(p){return p.scope.indexOf(k)>-1}).length});
   var html='<section class="hero-strip"><div class="hero-copy"><div class="eyebrow">HOSIS ARCHITECTURE</div><h2>Project intelligence,<br>clearly delivered.</h2><p>'+esc(state.role==="admin"?"You are viewing the complete fictional project portfolio.":"You are viewing projects assigned to "+USERS[state.userId].name+".")+'</p></div><div class="hero-actions"><button class="ghost-button" data-go-gallery>'+icon("panels-top-left")+'Explore Projects</button><button class="ghost-button" data-go-schedule>'+icon("gantt-chart-square")+'Open Schedule</button><button class="ghost-button" data-open-ai>'+icon("sparkles")+'Ask Hosis AI</button></div></section>'+
     '<section class="stat-grid">'+statCard("building-2",projects.length,"Total Active Projects")+statCard("flame",high,"High-Priority Projects")+statCard("badge-check",permitDeadlines,"Permit Deadlines")+statCard("gavel",tenderDeadlines,"Tender Deadlines")+statCard("triangle-alert",issues,"Delivery Issues")+statCard("clock-alert",overdue,"Overdue Tasks")+'</section>'+
-    '<section class="panel timeline-preview"><div class="panel-head"><div><h3>Portfolio Schedule</h3><small>Stage dates and overlaps across all visible projects</small></div><button data-go-schedule>Open full timeline</button></div>'+renderTimeline(projects,true)+'</section>'+
-    '<div class="dashboard-grid"><section class="panel"><div class="panel-head"><h3>Recent Activity</h3><button data-go-gallery>View portfolio</button></div><div class="activity-list">'+recent.map(function(x){var s=STAGES[x.a[2]]||{icon:"folder-kanban"};return '<div class="activity-row"><span class="activity-icon">'+icon(s.icon)+'</span><div><strong>'+esc(x.a[0])+'</strong><small>'+esc(x.p.number+" · "+x.p.name)+'</small></div><time>'+esc(x.a[1])+'</time></div>'}).join("")+'</div></section><section class="panel"><div class="panel-head"><h3>Projects by Stage</h3><button data-go-gallery>Filter</button></div><div class="stage-bars">'+Object.keys(STAGES).map(function(k){var pct=projects.length?Math.round(stageCounts[k]/projects.length*100):0;return '<div><div class="stage-bar-head"><span>'+icon(STAGES[k].icon)+' '+esc(STAGES[k].label)+'</span><b>'+stageCounts[k]+'</b></div><div class="stage-track"><div class="stage-fill stage-'+k+'" style="width:'+pct+'%"></div></div></div>'}).join("")+'</div></section></div>'+
+    '<div class="dashboard-grid">'+renderDashboardTasks(projects)+'<section class="panel"><div class="panel-head"><h3>Projects by Stage</h3><button data-go-gallery>Filter</button></div><div class="stage-bars">'+Object.keys(STAGES).map(function(k){var pct=projects.length?Math.round(stageCounts[k]/projects.length*100):0;return '<div><div class="stage-bar-head"><span>'+icon(STAGES[k].icon)+' '+esc(STAGES[k].label)+'</span><b>'+stageCounts[k]+'</b></div><div class="stage-track"><div class="stage-fill stage-'+k+'" style="width:'+pct+'%"></div></div></div>'}).join("")+'</div></section></div>'+
+    '<section class="panel timeline-preview dashboard-schedule"><div class="panel-head"><div><h3>Project Schedule</h3><small>Stage dates and overlaps across all visible projects</small></div><button data-go-schedule>Open full timeline</button></div>'+renderTimeline(projects,true)+'</section>'+
     '<div class="section-title"><div><h2>Featured Projects</h2><p>Visual portfolio of current fictional work.</p></div></div><section class="project-grid">'+projects.slice(0,3).map(projectCard).join("")+'</section>';
-  document.getElementById("content").innerHTML=html;bindCommon();
+  document.getElementById("content").innerHTML=html;bindDashboardTasks();bindCommon();
 }
+var showCompletedTasks=false;
+function renderDashboardTasks(projects){
+  var rank={High:0,Medium:1,Low:2},tasks=[];
+  projects.forEach(function(p){p.tasks.forEach(function(t){tasks.push({project:p,task:t});});});
+  tasks.sort(function(a,b){return (rank[a.task[3]]==null?3:rank[a.task[3]])-(rank[b.task[3]]==null?3:rank[b.task[3]])||(a.task[2]||"9999").localeCompare(b.task[2]||"9999")||a.task[1].localeCompare(b.task[1]);});
+  var open=tasks.filter(function(x){return !x.task[4];}),done=tasks.filter(function(x){return x.task[4];});
+  function row(x){var p=x.project,t=x.task;return '<div class="task-row dashboard-task'+(t[4]?' done':'')+'" data-priority="'+esc(t[3])+'"><button class="task-check" data-dashboard-task="'+esc(t[0])+'" data-task-project="'+esc(p.id)+'" aria-label="'+esc((t[4]?'Reopen ':'Complete ')+t[1])+'" aria-pressed="'+!!t[4]+'">'+(t[4]?icon('check'):'')+'</button><div class="dashboard-task-copy"><strong>'+esc(t[1])+'</strong><button class="task-project-link" data-project="'+esc(p.id)+'">'+esc(p.number+' · '+p.name)+'</button><small>Due '+esc(formatDate(t[2]))+'</small></div><span class="pill '+priorityClass(t[3])+'">'+esc(t[3])+'</span></div>';}
+  return '<section class="panel dashboard-tasks" aria-labelledby="dashboardTasksTitle"><div class="panel-head"><div><h3 id="dashboardTasksTitle">Project Tasks</h3><small>'+open.length+' open · High, Medium, Low · Earliest due first</small></div>'+icon('list-checks')+'</div><div class="task-list open-task-list">'+(open.length?open.map(row).join(''):'<p class="directory-empty">All caught up. No open tasks in your visible projects.</p>')+'</div>'+(done.length?'<details class="completed-tasks"'+(showCompletedTasks?' open':'')+'><summary>Completed tasks ('+done.length+')</summary><div class="task-list">'+done.map(row).join('')+'</div></details>':'')+'</section>';
+}
+function bindDashboardTasks(){
+  var completed=document.querySelector('.completed-tasks');
+  if(completed)completed.addEventListener('toggle',function(){showCompletedTasks=completed.open;});
+  document.querySelectorAll('[data-dashboard-task]').forEach(function(b){b.addEventListener('click',function(){
+    var p=visibleProjects().find(function(x){return x.id===b.dataset.taskProject;});
+    var task=p&&p.tasks.find(function(t){return t[0]===b.dataset.dashboardTask;});
+    if(!task)return;
+    task[4]=!task[4];if(task[4])showCompletedTasks=true;saveState();renderDashboard();refreshIcons();
+    var next=Array.from(document.querySelectorAll('[data-dashboard-task]')).find(function(el){return el.dataset.taskProject===p.id&&el.dataset.dashboardTask===task[0];});
+    if(next)next.focus({preventScroll:true});
+    toast(task[4]?'Task marked complete':'Task reopened');
+  });});
+}
+
+var DIRECTORIES={
+  clients:{title:'Clients',singular:'Client',icon:'briefcase-business',description:'Client organizations and the projects you deliver for them.'},
+  consultants:{title:'Consultants',singular:'Consultant',icon:'users-round',description:'Consultant teams, disciplines and their project assignments.'},
+  contractors:{title:'Contractors',singular:'Contractor',icon:'hard-hat',description:'Construction partners and the projects they are working on.'}
+};
+function companyDirectoryType(company){
+  var role=String(company.category||'').toLowerCase();
+  if(/contractor/.test(role))return 'contractors';
+  if(/client/.test(role))return 'clients';
+  if(/consultant|mechanical|electrical|structural/.test(role))return 'consultants';
+  return null;
+}
+function directoryCompanies(type){
+  var groups=new Map();
+  visibleProjects().forEach(function(p){p.companies.forEach(function(c){
+    if(companyDirectoryType(c)!==type||!String(c.name||'').trim()||/^(not required|not in scope|to be determined|not assigned)$/i.test(c.name.trim()))return;
+    var key=c.name.trim().replace(/\s+/g,' ').toLowerCase();
+    if(!groups.has(key))groups.set(key,{key:key,name:c.name,records:[],projects:[]});
+    var group=groups.get(key);group.records.push({company:c,project:p});
+    if(!group.projects.some(function(x){return x.id===p.id;}))group.projects.push(p);
+  });});
+  return Array.from(groups.values()).sort(function(a,b){return a.name.localeCompare(b.name);});
+}
+function directoryLogo(group){
+  var record=group.records.find(function(r){return /^https:\/\//i.test(r.company.logo||'');});
+  return '<div class="company-logo"><span>'+esc(initials(group.name))+'</span>'+(record?'<img src="'+esc(record.company.logo)+'" alt="'+esc(group.name)+' logo" loading="lazy" referrerpolicy="no-referrer">':'')+'</div>';
+}
+function directoryRoles(group){return Array.from(new Set(group.records.map(function(r){return r.company.category;}))).join(' · ');}
+function renderDirectory(){
+  var config=DIRECTORIES[currentDirectory],groups=directoryCompanies(currentDirectory);
+  setHeading('Project Directory / '+config.title,config.title);
+  var html='<div class="section-title directory-title"><div><div class="eyebrow dark">PROJECT DIRECTORY</div><h2>'+config.title+'</h2><p>'+esc(config.description)+'</p></div><span class="directory-count">'+groups.length+' '+(groups.length===1?'company':'companies')+'</span></div>';
+  html+=groups.length?'<section class="directory-grid">'+groups.map(function(group){
+    return '<article class="directory-card"><div class="company-heading">'+directoryLogo(group)+'<div class="contact-copy"><small>'+esc(directoryRoles(group))+'</small><h3>'+esc(group.name)+'</h3></div></div><div class="directory-projects"><small>ASSIGNED PROJECTS · '+group.projects.length+'</small>'+group.projects.map(function(p){return '<button data-project="'+esc(p.id)+'"><span>'+esc(p.number)+'</span>'+esc(p.name)+icon('arrow-up-right')+'</button>';}).join('')+'</div><button class="directory-open" data-company="'+esc(group.key)+'">View company & contacts '+icon('arrow-right')+'</button></article>';
+  }).join('')+'</section>':'<section class="panel directory-empty"><h3>No '+config.title.toLowerCase()+' yet</h3><p>Companies added to your visible projects appear here automatically.</p></section>';
+  document.getElementById('content').innerHTML=html;bindDirectory();bindCommon();
+}
+function renderCompanyProfile(){
+  var config=DIRECTORIES[currentDirectory],group=directoryCompanies(currentDirectory).find(function(g){return g.key===currentCompanyKey;});
+  if(!group){currentView=currentDirectory;renderDirectory();return;}
+  setHeading('Project Directory / '+config.title,group.name);
+  var html='<button class="directory-back" data-directory-back>'+icon('arrow-left')+'Back to '+config.title+'</button><section class="panel company-profile-header"><div class="company-heading">'+directoryLogo(group)+'<div><div class="eyebrow dark">'+esc(directoryRoles(group))+'</div><h2>'+esc(group.name)+'</h2><p>'+group.projects.length+' related '+(group.projects.length===1?'project':'projects')+' in your workspace</p></div></div></section><section class="panel company-contact-panel"><div class="panel-head"><div><h3>Contact Information</h3><small>Project-specific records are kept separate so contact differences are preserved.</small></div></div><div class="company-grid">'+group.records.map(function(record){var c=record.company,p=record.project;return '<article class="company-card"><div class="contact-copy"><small>'+esc(c.category)+'</small><h4>'+esc(c.contact||'Contact person not added')+'</h4></div>'+contactLinks(c)+'<div class="company-footer"><button class="task-project-link" data-project="'+esc(p.id)+'">'+esc(p.number+' · '+p.name)+' '+icon('arrow-up-right')+'</button></div></article>';}).join('')+'</div><p class="directory-note">Contact details can be updated in each project’s Project Companies section by an admin.</p></section><div class="section-title"><div><h2>Related Projects</h2><p>Open a project to see its scope, tasks and schedule.</p></div></div><section class="project-grid">'+group.projects.map(projectCard).join('')+'</section>';
+  document.getElementById('content').innerHTML=html;bindDirectory();bindCommon();
+}
+function bindDirectory(){
+  document.querySelectorAll('[data-company]').forEach(function(b){b.addEventListener('click',function(){currentCompanyKey=b.dataset.company;currentView='company';currentProjectId=null;render();window.scrollTo(0,0);});});
+  document.querySelectorAll('[data-directory-back]').forEach(function(b){b.addEventListener('click',function(){currentView=currentDirectory;currentCompanyKey=null;render();window.scrollTo(0,0);});});
+  document.querySelectorAll('.company-logo img').forEach(function(img){img.addEventListener('error',function(){img.remove();});});
+}
+
 function projectCard(p){
   return '<button class="project-card" data-project="'+p.id+'"><img src="'+esc(p.image)+'" alt="'+esc(p.name)+'" loading="lazy"><span class="card-top"><span class="card-tags"><span class="pill">'+esc(p.status)+'</span><span class="pill '+priorityClass(p.priority)+'">'+esc(p.priority)+'</span></span><span class="card-arrow">'+icon("arrow-up-right")+'</span></span><span class="card-bottom"><small>'+esc(p.number+" · "+p.type)+'</small><h3>'+esc(p.name)+'</h3><p>'+icon("map-pin")+' '+esc(p.address)+'</p><span class="card-meta"><span>'+p.scope.length+' active stages</span><span>'+p.assigned.map(function(u){return esc(USERS[u].name.split(" ")[0])}).join(" · ")+'</span></span></span></button>';
 }
@@ -588,7 +657,6 @@ function bindCommon(){
   bindProjectCards();
 }
 function setupEvents(){
-  document.getElementById("replayCinematic").addEventListener("click",function(){document.getElementById("welcome").classList.add("hidden");document.getElementById("intro").classList.remove("hidden");document.dispatchEvent(new Event("hosis:intro:replay"));});
   document.querySelectorAll("[data-role]").forEach(function(b){b.addEventListener("click",function(){launch("admin")})});
   document.getElementById("continueUser").addEventListener("click",function(){launch("user",document.getElementById("welcomeUser").value)});
   document.querySelectorAll(".nav-item[data-view]").forEach(function(b){b.addEventListener("click",function(){currentView=b.dataset.view;currentProjectId=null;if(currentView==="priority"){currentFilters.high=true}else if(currentView==="gallery"){currentFilters.high=false}render();document.getElementById("sidebar").classList.remove("open")})});
@@ -598,7 +666,7 @@ function setupEvents(){
   document.querySelectorAll("[data-ai-action]").forEach(function(b){b.addEventListener("click",function(){sendAi(b.dataset.aiAction,b.textContent.trim())})});
   document.getElementById("aiForm").addEventListener("submit",function(e){e.preventDefault();var input=document.getElementById("aiInput");if(!input.value.trim())return;sendAi("custom",input.value.trim());input.value=""});
   document.getElementById("globalSearch").addEventListener("input",function(e){currentFilters.query=e.target.value;currentView="gallery";currentProjectId=null;render()});
-  document.getElementById("switchRole").addEventListener("click",function(){document.getElementById("app").classList.add("hidden");document.getElementById("welcome").classList.remove("hidden");document.getElementById("sidebar").classList.remove("open");refreshIcons()});
+  document.getElementById("switchRole").addEventListener("click",function(){document.getElementById("app").classList.add("hidden");document.getElementById("intro").classList.remove("hidden");document.dispatchEvent(new Event("hosis:intro:replay"));document.getElementById("sidebar").classList.remove("open");document.getElementById("welcomeTitle").focus();refreshIcons()});
   document.getElementById("resetDemo").addEventListener("click",function(){if(confirm("Reset all prototype edits saved in this browser?")){state={role:state.role,userId:state.userId,projects:clone(INITIAL_PROJECTS)};state.projects.forEach(normalizeProject);saveState();currentProjectId=null;currentView="dashboard";render();toast("Prototype data reset")}});
   document.querySelectorAll("[data-close-modal]").forEach(function(b){b.addEventListener("click",closeScope)});
   document.querySelectorAll("[data-close-edit]").forEach(function(b){b.addEventListener("click",closeEditor)});
