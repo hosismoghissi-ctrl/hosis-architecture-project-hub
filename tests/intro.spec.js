@@ -5,8 +5,14 @@ test('live globe reaches Toronto and the welcome screen', async ({ page }) => {
   test.setTimeout(90000);
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
+  page.on('console', message => { if (['warning', 'error'].includes(message.type())) console.log('Intro browser:', message.text()); });
+  page.on('requestfailed', request => console.log('Intro request failed:', request.url(), request.failure()?.errorText));
   await page.goto(site);
-  await expect(page.locator('.cinematic')).toHaveClass(/map-ready/, { timeout: 25000 });
+  try {
+    await expect(page.locator('.cinematic')).toHaveClass(/map-ready/, { timeout: 25000 });
+  } finally {
+    await page.screenshot({ path: 'test-results/intro-startup.png' });
+  }
   await expect(page.locator('.cinematic')).toHaveAttribute('data-stage', '2', { timeout: 30000 });
   await page.getByRole('button', { name: 'Pause intro' }).click();
   await expect(page.getByRole('button', { name: 'Resume intro' })).toBeVisible();

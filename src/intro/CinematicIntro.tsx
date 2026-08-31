@@ -83,8 +83,9 @@ export function CinematicIntro() {
       clearTimeout(startupTimeout);
       scene = result; setReady(true);
       frame = requestAnimationFrame(frameTick);
-    }).catch(() => {
+    }).catch(error => {
       if (cancelled) return;
+      console.warn('Hosis intro map unavailable:', error instanceof Error ? error.message : 'Unknown map error');
       clearTimeout(startupTimeout); aborter.abort();
       setFallback('The live map is unavailable. You can still enter the hub.'); setFinished(true); setStage(3);
     });
