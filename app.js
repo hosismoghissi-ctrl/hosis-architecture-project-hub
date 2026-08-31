@@ -2,8 +2,8 @@
 "use strict";
 
 var STAGES={
-  design:{label:"Design",icon:"pen-tool",description:"Design development, revisions and approvals"},
   survey:{label:"Site Survey",icon:"scan-line",description:"Existing conditions, site measurements and survey records"},
+  design:{label:"Design",icon:"pen-tool",description:"Design development, revisions and approvals"},
   permit:{label:"Permit",icon:"badge-check",description:"Applications, comments and revisions"},
   tender:{label:"Tender",icon:"gavel",description:"Bidding, analysis and award"},
   construction:{label:"Construction Administration",icon:"hard-hat",description:"IFC, RFIs, submittals and changes"},
@@ -224,6 +224,10 @@ function defaultSchedule(project,index){
   var ranges={design:[0,96],survey:[-14,0],permit:[66,144],tender:[126,184],construction:[166,326],closeout:[306,355]};
   return project.scope.map(function(key){var r=ranges[key];return {id:uid("sch"),stage:key,start:addDays(base,r[0]),end:addDays(base,r[1]),status:r[1]<230?"Complete":"Ongoing"};});
 }
+function sortSchedule(project){
+  var order=Object.keys(STAGES);
+  project.schedule.sort(function(a,b){return order.indexOf(a.stage)-order.indexOf(b.stage);});
+}
 function normalizeProject(project,index){
   // Keep legacy administration records; they must not become survey evidence.
   if(project.scope.indexOf("admin")>-1){
@@ -231,6 +235,7 @@ function normalizeProject(project,index){
     project.scope=project.scope.map(function(k){return k==="admin"?"survey":k;}).filter(function(k,i,a){return a.indexOf(k)===i;});
     if(Array.isArray(project.schedule))project.schedule=project.schedule.filter(function(s){return s.stage!=="admin";});
   }
+  project.scope.sort(function(a,b){return Object.keys(STAGES).indexOf(a)-Object.keys(STAGES).indexOf(b);});
   project.assigned=Array.isArray(project.assigned)?project.assigned:[];
   project.team=Array.isArray(project.team)?project.team:[
     {id:uid("team"),role:"Client Project Manager",name:project.clientPM||"Not Assigned"},
@@ -246,6 +251,7 @@ function normalizeProject(project,index){
   if(project.scope.indexOf("survey")>-1&&!project.schedule.some(function(s){return s.stage==="survey";})){
     project.schedule.unshift(defaultSchedule({scope:["survey"]},index)[0]);
   }
+  sortSchedule(project);
   project.stageItems=project.stageItems||{};
   project.scope.forEach(function(key){
     if(!Array.isArray(project.stageItems[key]))project.stageItems[key]=defaultMilestones(key);
@@ -303,7 +309,7 @@ function startIntro(){
 function finishIntro(){
   document.getElementById("intro").classList.add("hidden");
   document.getElementById("welcome").classList.remove("hidden");
-  try{sessionStorage.setItem("hosis-cinematic-seen-v1","1")}catch(e){}
+  try{sessionStorage.setItem("hosis-video-annotated-seen-v1","1")}catch(e){}
   document.dispatchEvent(new Event("hosis:intro:closed"));
   var heading=document.querySelector(".welcome-panel h2");heading.setAttribute("tabindex","-1");heading.focus();refreshIcons();
 }
@@ -468,7 +474,7 @@ function editorConfig(project,kind,index,stageKey){
   }
   if(kind==="schedule"){
     item=creating?{id:uid("sch"),stage:project.scope[0],start:"2026-09-01",end:"2026-10-01",status:"Not Started"}:project.schedule[index];
-    return {title:creating?"Add Schedule Item":"Edit Schedule Item",description:"Stage bars can overlap when work happens at the same time.",fields:[{name:"stage",label:"Project Stage",type:"select",options:stageChoices(),value:item.stage},{name:"start",label:"Start Date",type:"date",value:item.start},{name:"end",label:"End Date",type:"date",value:item.end},{name:"status",label:"Status",type:"select",options:[["Not Started","Not Started"],["Ongoing","Ongoing"],["Complete","Complete"],["On Hold","On Hold"]],value:item.status}],validate:function(v){return v.end>=v.start?"":"End date must be on or after the start date."},save:function(v){Object.assign(item,v);if(creating)project.schedule.push(item)}};
+    return {title:creating?"Add Schedule Item":"Edit Schedule Item",description:"Stage bars can overlap when work happens at the same time.",fields:[{name:"stage",label:"Project Stage",type:"select",options:stageChoices(),value:item.stage},{name:"start",label:"Start Date",type:"date",value:item.start},{name:"end",label:"End Date",type:"date",value:item.end},{name:"status",label:"Status",type:"select",options:[["Not Started","Not Started"],["Ongoing","Ongoing"],["Complete","Complete"],["On Hold","On Hold"]],value:item.status}],validate:function(v){return v.end>=v.start?"":"End date must be on or after the start date."},save:function(v){Object.assign(item,v);if(creating)project.schedule.push(item);sortSchedule(project)}};
   }
   if(kind==="deadlines"){
     item=creating?["New Deadline","2026-09-15",project.scope[0]]:project.deadlines[index];
@@ -550,7 +556,7 @@ function saveScope(){
     if(!Array.isArray(p.stageItems[key]))p.stageItems[key]=defaultMilestones(key);
     if(!oldSchedule.some(function(s){return s.stage===key})){var last=oldSchedule[oldSchedule.length-1],start=last?addDays(last.end,-14):"2026-09-01";oldSchedule.push({id:uid("sch"),stage:key,start:start,end:addDays(start,60),status:"Not Started"})}
   });
-  p.schedule=oldSchedule.filter(function(s){return selected.indexOf(s.stage)>-1});saveState();activeStage=selected[0];closeScope();renderProject(p.id);toast("Project scope updated");
+  p.schedule=oldSchedule.filter(function(s){return selected.indexOf(s.stage)>-1});sortSchedule(p);saveState();activeStage=selected[0];closeScope();renderProject(p.id);toast("Project scope updated");
 }
 
 function openAi(){
