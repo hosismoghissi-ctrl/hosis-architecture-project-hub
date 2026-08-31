@@ -1,0 +1,26 @@
+name: Check Hosis prototype
+on: [pull_request]
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - name: Check hub and intro interactions
+        run: |
+          python3 -m http.server 4173 --directory dist >/tmp/hosis-http.log 2>&1 &
+          npm run test:e2e
+      - name: Save intro previews
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hosis-intro-previews
+          path: test-results

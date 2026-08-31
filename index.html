@@ -9,23 +9,12 @@
   <link rel="preconnect" href="https://images.unsplash.com">
   <link rel="stylesheet" href="styles.css">
   <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js" defer></script>
-  <script src="app.js" defer></script>
+  <script type="module" src="app.js"></script>
+  <script type="module" src="src/main.tsx"></script>
 </head>
 <body>
   <div id="intro" class="intro" aria-label="Cinematic introduction">
-    <video id="introVideo" class="intro-video" autoplay muted playsinline preload="auto" poster="assets/intro-poster.jpg">
-      <source src="assets/hosis-intro.mp4" type="video/mp4">
-    </video>
-    <div class="intro-video-shade" aria-hidden="true"></div>
-    <div class="intro-brand">
-      <div class="brand-lockup brand-lockup-light">
-        <span class="brand-mark"><i data-lucide="box"></i></span>
-        <span><strong>HOSIS</strong><small>ARCHITECTURE</small></span>
-      </div>
-      <p>PROJECT DELIVERY &amp; COORDINATION</p>
-    </div>
-    <button id="toggleIntroSound" class="ghost-button intro-sound" aria-label="Turn intro sound on"><i data-lucide="volume-x"></i><span>Sound off</span></button>
-    <button id="skipIntro" class="ghost-button intro-skip">Skip Intro <i data-lucide="arrow-right"></i></button>
+    <div id="introRoot"><div style="padding:40px;color:white"><h1>HOSIS ARCHITECTURE</h1><p>Project Delivery &amp; Coordination</p><button id="introFallback" class="ghost-button">Skip Intro</button></div></div>
   </div>
 
   <main id="welcome" class="welcome hidden">
@@ -50,6 +39,7 @@
         <div class="eyebrow dark">WELCOME</div>
         <h2>Welcome to Hosis Architecture Project Hub</h2>
         <p class="lead">Choose a prototype role to explore the project delivery system.</p>
+        <button id="replayCinematic" class="secondary-button" style="margin-bottom:20px">Replay Intro ↗</button>
         <button class="role-card" data-role="admin">
           <span class="role-icon admin"><i data-lucide="shield-check"></i></span>
           <span><strong>Continue as Admin</strong><small>View all projects and manage scope, status and priority.</small></span>

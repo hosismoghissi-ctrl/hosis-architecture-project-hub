@@ -33,18 +33,20 @@ jobs:
           node-version: 22
       - name: Install browser test dependencies
         run: |
-          npm install
+          npm ci
           npx playwright install --with-deps chromium
+      - name: Build Hosis with cinematic intro
+        run: npm run build
       - name: Run interaction smoke tests
         run: |
-          python3 -m http.server 4173 >/tmp/hosis-http.log 2>&1 &
+          python3 -m http.server 4173 --directory dist >/tmp/hosis-http.log 2>&1 &
           npm run test:e2e
       - name: Configure Pages
         uses: actions/configure-pages@v5
       - name: Upload static site
         uses: actions/upload-pages-artifact@v3
         with:
-          path: "."
+          path: "dist"
       - name: Deploy
         id: deployment
         uses: actions/deploy-pages@v4
