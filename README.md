@@ -53,4 +53,4 @@ Existing browser data is migrated without a reset. Prior administration records/
 
 Company and individual contact records are independently editable. Blank contact details are intentional; no real contact data is seeded. Logo images are loaded from an optional HTTPS URL, not uploaded. Role controls remain prototype UI only, not a security boundary.
 
-Pull requests run browser checks and save review screenshots in `hosis-visual-review`; only the existing main-branch Pages workflow deploys the site. Roll back a deployed change by reverting its merge commit. Browser migration retains legacy records but does not automatically restore the previous visual layout.
+Pull requests run browser checks and save review screenshots in the existing `hosis-intro-previews` artifact; only the main-branch Pages workflow deploys the site. Roll back a deployed change by reverting its merge commit. Browser migration retains legacy records but does not automatically restore the previous visual layout.

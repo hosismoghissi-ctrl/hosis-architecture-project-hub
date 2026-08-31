@@ -204,7 +204,7 @@ i[data-lucide]{width:18px;height:18px;stroke-width:1.8}
 .milestone-copy strong{font-size:12px;font-weight:700;line-height:1.5;overflow-wrap:anywhere}
 .milestone-copy small{font-size:11px;line-height:1.5;color:#596b61;overflow-wrap:anywhere}
 .optional-tag{display:inline-block;vertical-align:middle;margin-left:7px;background:#f0f1eb;color:#5a6052;border:1px solid #dfe1d7;padding:1px 4px;font-size:8px;letter-spacing:.05em;text-transform:uppercase}
-.milestone-controls{display:flex;align-items:center;gap:8px}
+.milestone-controls{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-width:0}
 .milestone-controls .tiny-action span{display:none}
 .milestone-controls .tiny-action,.milestone-controls .icon-button.micro{width:32px;height:36px;justify-content:center;padding:7px}
 .milestone-controls svg,.company-footer svg,.team-card .row-actions svg{width:15px;height:15px}
