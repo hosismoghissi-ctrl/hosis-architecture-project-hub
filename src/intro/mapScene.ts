@@ -1,6 +1,10 @@
-import { Map, type StyleSpecification, type GeoJSONSource, type ExpressionSpecification } from 'maplibre-gl';
+import { Map, setWorkerUrl, type StyleSpecification, type ExpressionSpecification } from 'maplibre-gl';
+import mapWorkerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
 import { INTRO, cameraAt } from './config';
 import { landmarkLayer } from './landmarks';
+
+// Bundle MapLibre 6's module worker, including its shared imports, for subpath hosting.
+setWorkerUrl(mapWorkerUrl);
 
 const cities = [
   ['Toronto', -79.3832, 43.6532], ['Montréal', -73.5673, 45.5019],
