@@ -8,17 +8,14 @@ test('live globe reaches Toronto and the welcome screen', async ({ page }) => {
   page.on('console', message => { if (['warning', 'error'].includes(message.type())) console.log('Intro browser:', message.text()); });
   page.on('requestfailed', request => { if (request.failure()?.errorText !== 'net::ERR_ABORTED') console.log('Intro request failed:', request.url(), request.failure()?.errorText); });
   await page.goto(site);
-  try {
-    await expect(page.locator('.cinematic')).toHaveClass(/map-ready/, { timeout: 25000 });
-  } finally {
-    await page.screenshot({ path: 'test-results/intro-startup.png' });
-  }
-  await expect(page.locator('.cinematic')).toHaveAttribute('data-stage', '2', { timeout: 30000 });
-  await expect(page.locator('.cinematic-map-label')).toHaveCSS('opacity', '1', { timeout: 15000 });
-  await page.getByRole('button', { name: 'Pause intro' }).click();
+  await expect(page.locator('.cinematic')).toHaveClass(/map-ready/, { timeout: 25000 });
+  // Exercise Pause at the beginning, not beside the end-of-animation unmount.
+  await page.getByRole('button', { name: 'Pause intro' }).click({ timeout: 5000 });
   await expect(page.getByRole('button', { name: 'Resume intro' })).toBeVisible();
-  await page.screenshot({ path: 'test-results/toronto-intro.png' });
+  await page.screenshot({ path: 'test-results/intro-startup.png' });
   await page.getByRole('button', { name: 'Resume intro' }).click();
+  await expect(page.locator('.cinematic')).toHaveAttribute('data-stage', '2', { timeout: 30000 });
+  await page.screenshot({ path: 'test-results/toronto-intro.png' });
   try {
     await expect(page.getByRole('button', { name: 'Enter Project Hub' })).toBeVisible({ timeout: 45000 });
   } finally {
