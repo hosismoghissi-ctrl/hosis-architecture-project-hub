@@ -3,12 +3,14 @@ const site = 'http://127.0.0.1:4173';
 const key = 'hosisHubPrototypeV1';
 
 async function openProject(page, user = false) {
-  await page.addInitScript(() => sessionStorage.setItem('hosis-cinematic-seen-v1', '1'));
+  await page.addInitScript(() => sessionStorage.setItem('hosis-video-annotated-seen-v1', '1'));
   await page.goto(site, { waitUntil: 'domcontentloaded' });
   if (user) await page.locator('#continueUser').click();
   else await page.getByRole('button', { name: 'Continue as Admin' }).click();
   await page.locator('[data-view="gallery"]').click();
   await page.locator('.project-card').first().click();
+  await expect(page.locator('.stage-chip').first()).toHaveAttribute('data-stage', 'survey');
+  await page.locator('[data-stage="design"]').click();
 }
 
 test('each scoped stage has an editable checklist and progress excludes N/A', async ({ page }) => {
@@ -133,4 +135,26 @@ test('project layout and checklist fit phone, tablet and desktop', async ({ page
   await page.locator('.company-grid').screenshot({ path: 'test-results/project-companies.png' });
   await page.setViewportSize({ width: 375, height: 844 });
   await page.screenshot({ path: 'test-results/project-mobile.png', fullPage: true });
+});
+
+test('saved scopes and schedules put Site Survey first without changing dates or records', async ({ page }) => {
+  await openProject(page);
+  const before = await page.evaluate(k => {
+    const data = JSON.parse(localStorage.getItem(k));
+    const project = data.projects[0];
+    project.scope.reverse(); project.schedule.reverse();
+    project.schedule.find(s => s.stage === 'design').start = '2025-12-03';
+    localStorage.setItem(k, JSON.stringify(data));
+    return { schedule: [...project.schedule].sort((a, b) => a.id.localeCompare(b.id)), items: project.stageItems, notes: project.notes };
+  }, key);
+  await openProject(page);
+  await expect(page.locator('.stage-chip').nth(1)).toHaveAttribute('data-stage', 'design');
+  await expect(page.locator('.project-schedule-row').first()).toContainText('Site Survey');
+  const after = await page.evaluate(k => {
+    const project = JSON.parse(localStorage.getItem(k)).projects[0];
+    return { schedule: [...project.schedule].sort((a, b) => a.id.localeCompare(b.id)), items: project.stageItems, notes: project.notes };
+  }, key);
+  expect(after).toEqual(before);
+  await page.getByRole('button', { name: 'Edit Scope' }).first().click();
+  await expect(page.locator('#scopeOptions input').first()).toHaveValue('survey');
 });

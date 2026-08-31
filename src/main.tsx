@@ -1,9 +1,8 @@
 import { createRoot } from 'react-dom/client';
 import { useEffect, useState } from 'react';
 import { CinematicIntro } from './intro/CinematicIntro';
-import 'maplibre-gl/dist/maplibre-gl.css';
 import './index.css';
-import { INTRO } from './intro/config';
+import { INTRO } from './intro/videoConfig';
 
 function IntroHost() {
   const [active, setActive] = useState(true);

@@ -26,7 +26,7 @@ jobs:
       - name: Validate JavaScript
         run: node --check app.js
       - name: Validate required files
-        run: test -s index.html && test -s styles.css && test -s app.js && test -s assets/hosis-intro.mp4 && test -s assets/intro-poster.jpg
+        run: test -s index.html && test -s styles.css && test -s app.js && test -s assets/hosis-intro-annotated.mp4 && test -s assets/hosis-intro-annotated-poster.jpg
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
@@ -34,7 +34,7 @@ jobs:
       - name: Install browser test dependencies
         run: |
           npm ci
-          npx playwright install --with-deps chromium
+          npx playwright install --with-deps chrome
       - name: Build Hosis with cinematic intro
         run: npm run build
       - name: Run interaction smoke tests
