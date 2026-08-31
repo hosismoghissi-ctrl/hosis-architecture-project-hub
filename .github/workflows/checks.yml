@@ -13,7 +13,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
-      - run: npx playwright install --with-deps chromium
+      - run: npx playwright install --with-deps chrome
       - name: Check hub and intro interactions
         run: |
           python3 -m http.server 4173 --directory dist >/tmp/hosis-http.log 2>&1 &

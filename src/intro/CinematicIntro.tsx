@@ -26,6 +26,7 @@ export function CinematicIntro() {
     let cancelled = false;
     let resumeWhenVisible = false;
     const play = () => media.play().catch(() => { if (!cancelled) setPaused(true); });
+    // Use one autoplay path so policy failures reliably expose Resume.
     void play();
     const visibility = () => {
       if (document.hidden) {
@@ -64,7 +65,7 @@ export function CinematicIntro() {
   return <section className={`cinematic cinematic-video-intro ${finished ? 'has-arrived' : ''}`} aria-label="Hosis cinematic introduction">
     <img className="cinematic-video-poster" src={INTRO.poster} alt="" />
     {!reduced && <video key={replay} ref={video} className="cinematic-video" src={INTRO.video} poster={INTRO.poster}
-      autoPlay muted playsInline preload="auto" aria-label="Annotated architectural introduction"
+      muted playsInline preload="auto" aria-label="Annotated architectural introduction"
       onLoadedData={() => setReady(true)} onError={fail}
       onPlay={() => setPaused(false)} onPause={() => setPaused(true)}
       onTimeUpdate={event => { const media = event.currentTarget; if (media.duration) setProgress(media.currentTime / media.duration); }}

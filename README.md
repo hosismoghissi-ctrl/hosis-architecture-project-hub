@@ -33,7 +33,7 @@ The included GitHub Pages workflow builds with Vite, runs the interaction tests,
 
 ## Development
 
-Run `npm ci`, then `npm run dev`. Run `npm run build` for TypeScript validation and the production build. The original project hub remains in `app.js`; its localStorage schema and project records are unchanged. The React 18 intro is an isolated component in `src/intro/`.
+Run `npm ci`, then `npm run dev`. Browser tests use Google Chrome for H.264 playback; install it with `npx playwright install --with-deps chrome`. Run `npm run build` for TypeScript validation and the production build. The original project hub remains in `app.js`; its localStorage schema and project records are unchanged. The React 18 intro is an isolated component in `src/intro/`.
 
 ## Cinematic intro
 
