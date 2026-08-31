@@ -242,13 +242,17 @@ function stageProgress(project,key){
 function setNav(view){document.querySelectorAll(".nav-item[data-view]").forEach(function(b){b.classList.toggle("active",b.dataset.view===view)});}
 
 function startIntro(){
-  var video=document.getElementById("introVideo");
-  if(!video){finishIntro();return;}
-  video.addEventListener("ended",finishIntro,{once:true});
-  video.addEventListener("error",function(){setTimeout(finishIntro,1200)},{once:true});
-  var play=video.play();if(play&&play.catch)play.catch(function(){});
+  document.addEventListener("hosis:intro:enter",finishIntro);
+  var fallback=document.getElementById("introFallback");
+  if(fallback)fallback.addEventListener("click",finishIntro);
 }
-function finishIntro(){document.getElementById("introVideo").pause();document.getElementById("intro").classList.add("hidden");document.getElementById("welcome").classList.remove("hidden");refreshIcons();}
+function finishIntro(){
+  document.getElementById("intro").classList.add("hidden");
+  document.getElementById("welcome").classList.remove("hidden");
+  try{sessionStorage.setItem("hosis-cinematic-seen-v1","1")}catch(e){}
+  document.dispatchEvent(new Event("hosis:intro:closed"));
+  var heading=document.querySelector(".welcome-panel h2");heading.setAttribute("tabindex","-1");heading.focus();refreshIcons();
+}
 function launch(role,userId){
   state.role=role;state.userId=role==="admin"?null:userId;saveState();
   document.getElementById("welcome").classList.add("hidden");document.getElementById("app").classList.remove("hidden");
@@ -505,8 +509,7 @@ function bindCommon(){
   bindProjectCards();
 }
 function setupEvents(){
-  document.getElementById("skipIntro").addEventListener("click",finishIntro);
-  document.getElementById("toggleIntroSound").addEventListener("click",function(){var video=document.getElementById("introVideo"),button=this;video.muted=!video.muted;button.innerHTML=icon(video.muted?"volume-x":"volume-2")+'<span>'+(video.muted?"Sound off":"Sound on")+'</span>';button.setAttribute("aria-label",video.muted?"Turn intro sound on":"Turn intro sound off");if(!video.muted)video.play();refreshIcons()});
+  document.getElementById("replayCinematic").addEventListener("click",function(){document.getElementById("welcome").classList.add("hidden");document.getElementById("intro").classList.remove("hidden");document.dispatchEvent(new Event("hosis:intro:replay"));});
   document.querySelectorAll("[data-role]").forEach(function(b){b.addEventListener("click",function(){launch("admin")})});
   document.getElementById("continueUser").addEventListener("click",function(){launch("user",document.getElementById("welcomeUser").value)});
   document.querySelectorAll(".nav-item[data-view]").forEach(function(b){b.addEventListener("click",function(){currentView=b.dataset.view;currentProjectId=null;if(currentView==="priority"){currentFilters.high=true}else if(currentView==="gallery"){currentFilters.high=false}render();document.getElementById("sidebar").classList.remove("open")})});
