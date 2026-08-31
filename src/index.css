@@ -71,6 +71,7 @@
   .entry-panel { padding: 22px; }
   .entry-panel h1 { font-size: 30px; }
   .entry-lead { margin-bottom: 16px; }
+  #introRoot .cinematic-footer { display: none; }
 }
 @media(prefers-reduced-motion:reduce) {
   #introRoot *, .entry-panel * { animation: none!important; transition: none!important; }
