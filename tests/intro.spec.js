@@ -5,10 +5,15 @@ const sessionKey = 'hosis-video-annotated-seen-v1';
 test('supplied video plays, pauses, finishes and replays', async ({ page }) => {
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
+  page.on('response', response => { if (response.url().includes('.mp4')) console.log('VIDEO RESPONSE', response.status(), response.url(), response.headers()['content-type']); });
   await page.goto(site);
   const video = page.locator('video.cinematic-video');
   await expect(video).toHaveAttribute('src', /hosis-intro-annotated.mp4$/);
-  await expect.poll(() => video.evaluate(v => v.currentTime)).toBeGreaterThan(0);
+  try {
+    await expect.poll(() => video.evaluate(v => v.currentTime)).toBeGreaterThan(0);
+  } finally {
+    console.log('VIDEO DIAGNOSTICS', await video.evaluate(v => ({ src: v.currentSrc, error: v.error && { code: v.error.code, message: v.error.message }, ready: v.readyState, network: v.networkState, codec: v.canPlayType('video/mp4; codecs="avc1.64001f"') })));
+  }
   await page.getByRole('button', { name: 'Pause intro' }).click();
   await expect(video).toHaveJSProperty('paused', true);
   await page.screenshot({ path: 'test-results/video-intro-desktop.png' });
