@@ -13,52 +13,34 @@
   <script type="module" src="src/main.tsx"></script>
 </head>
 <body>
-  <div id="intro" class="intro" aria-label="Cinematic introduction">
-    <div id="introRoot"><div style="padding:40px;color:white"><h1>HOSIS ARCHITECTURE</h1><p>Project Delivery &amp; Coordination</p><button id="introFallback" class="ghost-button">Skip Intro</button></div></div>
-  </div>
-
-  <main id="welcome" class="welcome hidden">
-    <div class="welcome-media">
-      <div class="brand-lockup brand-lockup-light">
-        <span class="brand-mark"><i data-lucide="box"></i></span>
-        <span><strong>HOSIS</strong><small>ARCHITECTURE</small></span>
-      </div>
-      <div class="welcome-overlay">
-        <div class="eyebrow">PROJECT DELIVERY &amp; COORDINATION</div>
-        <h1>Design clarity.<br>Delivery control.</h1>
-        <p>A visual command centre for architecture, permits, tendering and construction administration.</p>
-        <div class="location-chip"><i data-lucide="map-pin"></i> 88 Charles Street, Toronto · Demo Location</div>
-      </div>
-    </div>
-    <section class="welcome-panel">
-      <div class="welcome-panel-inner">
-        <div class="brand-lockup brand-lockup-dark mobile-brand">
-          <span class="brand-mark"><i data-lucide="box"></i></span>
-          <span><strong>HOSIS</strong><small>ARCHITECTURE</small></span>
-        </div>
-        <div class="eyebrow dark">WELCOME</div>
-        <h2>Welcome to Hosis Architecture Project Hub</h2>
-        <p class="lead">Choose a prototype role to explore the project delivery system.</p>
-        <button id="replayCinematic" class="secondary-button" style="margin-bottom:20px">Replay Intro ↗</button>
+  <div id="intro" class="intro" aria-label="Welcome to Hosis Architecture">
+    <div id="introRoot"></div>
+    <main id="welcome" class="entry-welcome" aria-labelledby="welcomeTitle">
+      <section class="entry-panel">
+        <div class="eyebrow">HOSIS ARCHITECTURE · PROJECT DELIVERY</div>
+        <h1 id="welcomeTitle" tabindex="-1">Architecture in motion.<br><span>Projects under control.</span></h1>
+        <p class="entry-lead">Coordinate drawings, teams, schedules and every project stage—from site survey to closeout.</p>
+        <div class="entry-role-label">CHOOSE YOUR WORKSPACE</div>
         <button class="role-card" data-role="admin">
           <span class="role-icon admin"><i data-lucide="shield-check"></i></span>
-          <span><strong>Continue as Admin</strong><small>View all projects and manage scope, status and priority.</small></span>
+          <span><strong>Continue as Admin</strong><small>Manage all projects, teams and priorities.</small></span>
           <i data-lucide="arrow-up-right"></i>
         </button>
         <div class="user-role-card">
           <span class="role-icon user"><i data-lucide="user-round"></i></span>
-          <span class="user-role-copy"><strong>Continue as User</strong><small>View only projects assigned to a selected demo user.</small></span>
-          <select id="welcomeUser" aria-label="Select demo user">
+          <span class="user-role-copy"><strong>Continue as User</strong><small>Explore your assigned projects.</small></span>
+          <label class="entry-user-label" for="welcomeUser">Demo user</label>
+          <select id="welcomeUser">
             <option value="maya">Maya Chen</option>
             <option value="liam">Liam Brooks</option>
             <option value="sofia">Sofia Martinez</option>
           </select>
           <button id="continueUser" class="icon-button" aria-label="Continue as selected user"><i data-lucide="arrow-right"></i></button>
         </div>
-        <div class="prototype-note"><i data-lucide="info"></i><span>Front-end prototype. Roles and project data are fictional; no real authentication or database is connected.</span></div>
-      </div>
-    </section>
-  </main>
+        <p class="entry-prototype"><i data-lucide="info"></i><span>Demo workspace. Fictional data and simulated roles; no real sign-in or shared database.</span></p>
+      </section>
+    </main>
+  </div>
 
   <div id="app" class="app-shell hidden">
     <aside id="sidebar" class="sidebar">
@@ -77,10 +59,18 @@
         <button class="nav-item" id="openAiNav"><i data-lucide="sparkles"></i><span>AI Assistant</span></button>
         <button class="nav-item" id="resetDemo"><i data-lucide="rotate-ccw"></i><span>Reset Demo Data</span></button>
       </nav>
+      <div class="sidebar-directory">
+        <div class="sidebar-section-label">PROJECT DIRECTORY</div>
+        <nav class="main-nav" aria-label="Project directory">
+          <button class="nav-item" data-view="clients"><i data-lucide="briefcase-business"></i><span>Clients</span></button>
+          <button class="nav-item" data-view="consultants"><i data-lucide="users-round"></i><span>Consultants</span></button>
+          <button class="nav-item" data-view="contractors"><i data-lucide="hard-hat"></i><span>Contractors</span></button>
+        </nav>
+      </div>
       <div class="sidebar-footer">
         <div class="avatar" id="sidebarAvatar">HA</div>
         <div><strong id="sidebarUserName">Hosis Admin</strong><small id="sidebarRole">Administrator</small></div>
-        <button id="switchRole" class="icon-button subtle" title="Switch role"><i data-lucide="log-out"></i></button>
+        <button id="switchRole" class="icon-button subtle" title="Switch role" aria-label="Switch role"><i data-lucide="log-out"></i></button>
       </div>
     </aside>
 

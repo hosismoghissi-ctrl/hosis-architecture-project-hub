@@ -3,7 +3,7 @@ const { test, expect } = require("@playwright/test");
 async function skipIntro(page) {
   await page.goto("http://127.0.0.1:4173", { waitUntil: "domcontentloaded" });
   await page.getByRole("button", { name: /Skip Intro/i }).click();
-  await expect(page.getByRole("heading", { name: /Welcome to Hosis Architecture Project Hub/i })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /Architecture in motion.*Projects under control/i })).toBeVisible();
 }
 
 test("admin can navigate projects, tasks, scope and assistant", async ({ page }) => {
