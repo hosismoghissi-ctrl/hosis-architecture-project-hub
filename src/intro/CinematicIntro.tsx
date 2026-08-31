@@ -44,7 +44,8 @@ export function CinematicIntro() {
     document.addEventListener('visibilitychange', hideListener);
     const frameTick = (now: number) => {
       if (cancelled || !scene) return;
-      const delta = previous ? Math.min(80, now - previous) : 0;
+      // Use elapsed time, not frame count: low-powered devices must not stretch a 12s intro into a minute.
+      const delta = previous ? Math.max(0, now - previous) : 0;
       previous = now;
       if (!pausedRef.current && !document.hidden) {
         clock.current = Math.min(INTRO.duration, clock.current + delta);

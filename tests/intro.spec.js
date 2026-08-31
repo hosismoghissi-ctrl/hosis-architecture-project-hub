@@ -4,9 +4,9 @@ const site = 'http://127.0.0.1:4173';
 test('live globe reaches Toronto and the welcome screen', async ({ page }) => {
   test.setTimeout(90000);
   const errors = [];
-  page.on('pageerror', error => errors.push(error.message));
+  page.on('pageerror', error => { errors.push(error.message); console.log('Intro runtime error:', error.stack); });
   page.on('console', message => { if (['warning', 'error'].includes(message.type())) console.log('Intro browser:', message.text()); });
-  page.on('requestfailed', request => console.log('Intro request failed:', request.url(), request.failure()?.errorText));
+  page.on('requestfailed', request => { if (request.failure()?.errorText !== 'net::ERR_ABORTED') console.log('Intro request failed:', request.url(), request.failure()?.errorText); });
   await page.goto(site);
   try {
     await expect(page.locator('.cinematic')).toHaveClass(/map-ready/, { timeout: 25000 });
@@ -14,11 +14,16 @@ test('live globe reaches Toronto and the welcome screen', async ({ page }) => {
     await page.screenshot({ path: 'test-results/intro-startup.png' });
   }
   await expect(page.locator('.cinematic')).toHaveAttribute('data-stage', '2', { timeout: 30000 });
+  await expect(page.locator('.cinematic-map-label')).toHaveCSS('opacity', '1', { timeout: 15000 });
   await page.getByRole('button', { name: 'Pause intro' }).click();
   await expect(page.getByRole('button', { name: 'Resume intro' })).toBeVisible();
   await page.screenshot({ path: 'test-results/toronto-intro.png' });
   await page.getByRole('button', { name: 'Resume intro' }).click();
-  await expect(page.getByRole('button', { name: 'Enter Project Hub' })).toBeVisible({ timeout: 45000 });
+  try {
+    await expect(page.getByRole('button', { name: 'Enter Project Hub' })).toBeVisible({ timeout: 45000 });
+  } finally {
+    await page.screenshot({ path: 'test-results/intro-final-state.png' });
+  }
   await expect(page.getByText('The live map is unavailable. You can still enter the hub.')).toHaveCount(0);
   await page.screenshot({ path: 'test-results/hosis-welcome.png' });
   expect(errors).toEqual([]);
