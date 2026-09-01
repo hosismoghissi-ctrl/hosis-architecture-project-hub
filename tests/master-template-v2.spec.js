@@ -46,7 +46,7 @@ test('meeting action creates and updates the same project task', async ({ page }
   await page.getByLabel('Action / Task').fill('Confirm storefront hardware selection');
   await page.getByLabel('Assigned To').fill('Maya Chen');
   await page.getByLabel('Due Date').fill('2026-09-14');
-  await page.getByLabel('Priority', { exact: true }).selectOption('High');
+  await page.locator('#editForm select[name="priority"]').selectOption('High');
   await page.getByRole('button', { name: 'Save Changes' }).click();
   await expect(page.locator('.meeting-action').filter({ hasText: 'Confirm storefront hardware selection' })).toBeVisible();
   await expect(page.locator('.task-row').filter({ hasText: 'Confirm storefront hardware selection' })).toBeVisible();
