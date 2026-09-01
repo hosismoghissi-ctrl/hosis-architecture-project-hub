@@ -13,6 +13,7 @@ async function enter(page, user) {
 }
 
 async function openProject(page, id = 'hap-2601') {
+  if (page.viewportSize()?.width <= 900) await page.getByRole('button', { name: 'Toggle menu' }).click();
   await page.locator('[data-view="gallery"]').click();
   await page.locator(`.project-card[data-project="${id}"]`).click();
 }
@@ -45,7 +46,7 @@ test('meeting action creates and updates the same project task', async ({ page }
   await page.getByLabel('Action / Task').fill('Confirm storefront hardware selection');
   await page.getByLabel('Assigned To').fill('Maya Chen');
   await page.getByLabel('Due Date').fill('2026-09-14');
-  await page.getByLabel('Priority').selectOption('High');
+  await page.getByLabel('Priority', { exact: true }).selectOption('High');
   await page.getByRole('button', { name: 'Save Changes' }).click();
   await expect(page.locator('.meeting-action').filter({ hasText: 'Confirm storefront hardware selection' })).toBeVisible();
   await expect(page.locator('.task-row').filter({ hasText: 'Confirm storefront hardware selection' })).toBeVisible();
@@ -68,7 +69,7 @@ test('construction administration uses separate addable registers', async ({ pag
   await rfi.getByRole('button', { name: /Add RFI record/i }).click();
   await page.getByLabel('Record Number').fill('RFI-03');
   await page.getByLabel('Title / Subject').fill('Confirm ceiling access panel location');
-  await page.getByLabel('Status').fill('Open');
+  await page.getByLabel('Status', { exact: true }).fill('Open');
   await page.getByRole('button', { name: 'Save Changes' }).click();
   await expect(page.locator('[data-register-group="rfis"] .register-row')).toHaveCount(3);
   await expect(page.locator('[data-register-group="rfis"]')).toContainText('Confirm ceiling access panel location');

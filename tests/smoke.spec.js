@@ -38,7 +38,7 @@ test("admin can edit records and schedule dates", async ({ page }) => {
   await expect(page.locator(".stage-chip")).toHaveCount(6);
   await expect(page.locator(".project-schedule-row")).toHaveCount(6);
 
-  await page.getByRole("button", { name: /Add task/i }).click();
+  await page.getByRole("button", { name: "Add task", exact: true }).click();
   await page.locator('#editForm input[name="title"]').fill("Coordinate fictional signage package");
   await page.getByRole("button", { name: /Save Changes/i }).click();
   await expect(page.getByText("Coordinate fictional signage package")).toBeVisible();
