@@ -114,9 +114,29 @@ function stageCompletion(project,key){
 }
 
 var USERS={
-  maya:{name:"Maya Chen",role:"Architectural Coordinator",initials:"MC"},
-  liam:{name:"Liam Brooks",role:"Project Technologist",initials:"LB"},
-  sofia:{name:"Sofia Martinez",role:"Project Designer",initials:"SM"}
+  maya:{name:"Maya Chen",role:"Architectural Coordinator",initials:"MC",photo:"https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=240&q=82"},
+  liam:{name:"Liam Brooks",role:"Project Technologist",initials:"LB",photo:"https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=240&q=82"},
+  sofia:{name:"Sofia Martinez",role:"Project Designer",initials:"SM",photo:"https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=240&q=82"}
+};
+
+var CONSTRUCTION_REGISTERS={
+  specifications:{label:"Specifications",icon:"book-open-text",prefix:"SPEC",description:"Project manual, specification sections and revisions"},
+  ifc:{label:"IFC Drawings",icon:"file-badge",prefix:"IFC",description:"Issued-for-construction drawing packages"},
+  siteReviews:{label:"Site Reviews",icon:"hard-hat",prefix:"SR",description:"Scheduled visits and site observations"},
+  fieldReports:{label:"Field Reports",icon:"clipboard-list",prefix:"FR",description:"Architectural field review reports"},
+  rfis:{label:"RFIs",icon:"circle-help",prefix:"RFI",description:"Requests for information and responses"},
+  siteInstructions:{label:"Site Instructions",icon:"clipboard-pen-line",prefix:"SI",description:"Instructions issued during construction"},
+  changeNotices:{label:"Change Notices",icon:"file-warning",prefix:"CN",description:"Pricing notices and proposed scope changes"},
+  changeOrders:{label:"Change Orders",icon:"badge-dollar-sign",prefix:"CO",description:"Approved contract changes"},
+  cpcs:{label:"Contractor Proposed Changes",icon:"repeat-2",prefix:"CPC",description:"Contractor-originated change proposals"},
+  shopDrawings:{label:"Shop Drawings",icon:"layers-3",prefix:"SD",description:"Fabrication and installation submittals"},
+  submittals:{label:"Submittals",icon:"inbox",prefix:"SUB",description:"Product data, samples and technical submissions"},
+  deficiencies:{label:"Deficiency List",icon:"list-x",prefix:"DEF",description:"Outstanding site and completion items"}
+};
+var TENDER_REGISTERS={
+  addenda:{label:"Addenda",icon:"file-plus-2",prefix:"ADD",description:"Issued tender revisions and clarifications"},
+  questions:{label:"Bid Questions",icon:"messages-square",prefix:"BQ",description:"Bidder questions and formal responses"},
+  clarifications:{label:"Post-Tender Clarifications",icon:"search-check",prefix:"PTC",description:"Scope and price clarifications after closing"}
 };
 
 var INITIAL_PROJECTS=[
@@ -213,6 +233,7 @@ var currentProjectId=null;
 var currentDirectory="clients";
 var currentCompanyKey=null;
 var activeStage=null;
+var adminMemberFilter=null;
 var currentFilters={query:"",type:"",status:"",priority:"",user:"",high:false};
 var scopeEditingId=null;
 var editContext=null;
@@ -229,6 +250,52 @@ function defaultSchedule(project,index){
 function sortSchedule(project){
   var order=Object.keys(STAGES);
   project.schedule.sort(function(a,b){return order.indexOf(a.stage)-order.indexOf(b.stage);});
+}
+function registerRecord(prefix,number,title,status,date,due,responsible,cost){
+  return {id:uid("record"),number:prefix+"-"+String(number).padStart(2,"0"),title:title,status:status||"Open",date:date||"2026-08-25",due:due||"",responsible:responsible||"Project Team",cost:cost||"",description:""};
+}
+function defaultConstructionRegisters(project){
+  var records={};Object.keys(CONSTRUCTION_REGISTERS).forEach(function(key){records[key]=[];});
+  records.specifications=[registerRecord("SPEC",1,"Project manual and architectural specifications","Issued","2026-07-18","","Architect")];
+  records.ifc=[registerRecord("IFC",1,"Issued for Construction drawing package","Issued","2026-08-01","","Architect")];
+  records.siteReviews=[registerRecord("SR",1,"Framing and above-ceiling review","Complete","2026-08-21","","Maya Chen")];
+  records.fieldReports=[registerRecord("FR",1,"Field report — framing progress","Issued","2026-08-22","","Maya Chen")];
+  records.rfis=[registerRecord("RFI",1,"Ceiling coordination at reception","Open","2026-08-26","2026-09-03","Mechanical Consultant"),registerRecord("RFI",2,"Millwork backing requirements","Closed","2026-08-20","2026-08-27","Architect")];
+  records.siteInstructions=[registerRecord("SI",1,"Relocate wall-mounted device","Issued","2026-08-24","","Architect")];
+  records.changeNotices=[registerRecord("CN",1,"Revised feature lighting scope","Pricing","2026-08-27","2026-09-05","General Contractor","$4,850")];
+  records.changeOrders=[registerRecord("CO",1,"Approved reception millwork revision","Approved","2026-08-18","","Owner","$3,200")];
+  records.cpcs=[];
+  records.shopDrawings=[registerRecord("SD",1,"Custom millwork shop drawings","Revise & Resubmit","2026-08-23","2026-09-02","Millwork Subcontractor")];
+  records.submittals=[registerRecord("SUB",1,"Acoustic ceiling product data","Reviewed","2026-08-19","","Architect")];
+  records.deficiencies=[registerRecord("DEF",1,"Touch-up paint at corridor door frames","Open","2026-08-29","2026-09-08","General Contractor")];
+  return records;
+}
+function defaultTenderData(project){
+  return {
+    phase:"Tender",
+    issueDate:"2026-08-18",
+    closingDate:"2026-09-11",
+    estimate:275000,
+    bidders:[
+      {id:uid("bidder"),name:"Keystone Buildworks",contact:"Jordan Lee",baseBid:286400,separatePrices:"SP-01 Lighting: $8,400; SP-02 Flooring: $12,600",status:"Submitted",winner:false,notes:"Complete bid."},
+      {id:uid("bidder"),name:"Stonebridge Constructors",contact:"Avery Singh",baseBid:279850,separatePrices:"SP-01 Lighting: $7,950; SP-02 Flooring: $11,900",status:"Recommended",winner:true,notes:"Lowest compliant bid."},
+      {id:uid("bidder"),name:"CivicForm Construction",contact:"Morgan Bell",baseBid:292100,separatePrices:"SP-01 Lighting: $8,700; SP-02 Flooring: $12,250",status:"Submitted",winner:false,notes:"Clarification required."}
+    ],
+    registers:{
+      addenda:[registerRecord("ADD",1,"Tender Addendum 01","Issued","2026-08-28","","Architect")],
+      questions:[registerRecord("BQ",1,"Confirm after-hours working requirements","Answered","2026-08-25","2026-08-27","Architect")],
+      clarifications:[registerRecord("PTC",1,"Confirm exclusions and construction duration","Open","2026-09-12","2026-09-14","Recommended Bidder")]
+    }
+  };
+}
+function defaultMeetings(project,index){
+  var task=project.tasks&&project.tasks[0];
+  return [{
+    id:uid("meeting"),title:index%2?"Client & Consultant Coordination":"Weekly Project Coordination",
+    date:addDays("2026-08-27",index),time:index%2?"10:30":"14:00",stage:project.scope[0],location:index%2?"Microsoft Teams":"Project Site",
+    attendees:"Project team, client and consultants",notes:"Review current deliverables, decisions and outstanding coordination items.",
+    actions:task?[{id:uid("action"),title:task[1],assignee:project.lead||"Project Team",due:task[2],priority:task[3],taskId:task[0]}]:[]
+  }];
 }
 function normalizeProject(project,index){
   // Keep legacy administration records; they must not become survey evidence.
@@ -273,6 +340,21 @@ function normalizeProject(project,index){
   ].filter(function(x){return x[1]&&!/^(Not Required|Not in Scope|To Be Determined)$/i.test(x[1]);}).map(function(x){return {id:uid("company"),category:x[0],name:x[1],contact:x[2]||"",email:"",phone:"",logo:""};});
   project.deadlines=Array.isArray(project.deadlines)?project.deadlines:[];
   project.tasks=Array.isArray(project.tasks)?project.tasks:[];
+  project.meetings=Array.isArray(project.meetings)?project.meetings:defaultMeetings(project,index);
+  project.meetings.forEach(function(meeting){
+    meeting.id=meeting.id||uid("meeting");meeting.actions=Array.isArray(meeting.actions)?meeting.actions:[];
+    meeting.actions.forEach(function(action){
+      var linked=action.taskId&&project.tasks.find(function(task){return task[0]===action.taskId;});
+      if(!linked){action.taskId=action.taskId||uid("task");linked=[action.taskId,action.title||"Meeting action",action.due||meeting.date,action.priority||"Medium",false,{meetingId:meeting.id}];project.tasks.push(linked);}
+      action.title=linked[1];action.due=linked[2];action.priority=linked[3];
+    });
+  });
+  project.constructionRegisters=project.constructionRegisters||defaultConstructionRegisters(project);
+  Object.keys(CONSTRUCTION_REGISTERS).forEach(function(key){if(!Array.isArray(project.constructionRegisters[key]))project.constructionRegisters[key]=[];});
+  project.tenderData=project.tenderData||defaultTenderData(project);
+  project.tenderData.bidders=Array.isArray(project.tenderData.bidders)?project.tenderData.bidders:[];
+  project.tenderData.registers=project.tenderData.registers||{};
+  Object.keys(TENDER_REGISTERS).forEach(function(key){if(!Array.isArray(project.tenderData.registers[key]))project.tenderData.registers[key]=[];});
   project.activity=Array.isArray(project.activity)?project.activity:[];
   project.documents=Array.isArray(project.documents)?project.documents:[];
   project.notes=project.notes||"";
@@ -295,7 +377,13 @@ function formatDate(date){if(!date)return "No date";return new Date(date+"T12:00
 function allTypes(){return Array.from(new Set(state.projects.map(function(p){return p.type}))).sort();}
 function allStatuses(){return Array.from(new Set(state.projects.map(function(p){return p.status}))).sort();}
 function visibleProjects(){if(state.role==="admin")return state.projects;return state.projects.filter(function(p){return p.assigned.indexOf(state.userId)>-1});}
+function dashboardProjects(){
+  if(state.role!=="admin")return visibleProjects();
+  return adminMemberFilter?state.projects.filter(function(p){return p.assigned.indexOf(adminMemberFilter)>-1;}):state.projects;
+}
+function workspaceProjects(){return state.role==="admin"&&adminMemberFilter?dashboardProjects():visibleProjects();}
 function priorityClass(value){return String(value||"Medium").toLowerCase();}
+function formatCurrency(value){var number=Number(value)||0;return number.toLocaleString("en-CA",{style:"currency",currency:"CAD",maximumFractionDigits:0});}
 function stageLabel(key){return STAGES[key]?STAGES[key].label:key==="admin"?"Project Administration (archived)":key;}
 function projectById(id){return state.projects.find(function(p){return p.id===id});}
 function stageProgress(project,key){
@@ -308,11 +396,23 @@ function startIntro(){
     document.getElementById("welcomeTitle").focus({preventScroll:true});
   });
 }
+function applyRoleNavigation(user){
+  var isAdmin=state.role==="admin";
+  document.querySelectorAll(".admin-only").forEach(function(el){el.classList.toggle("hidden",!isAdmin);});
+  var labels={dashboard:isAdmin?"Dashboard":"My Dashboard",gallery:isAdmin?"Projects":"My Projects",schedule:isAdmin?"Project Schedule":"My Schedule",meetings:isAdmin?"Meetings":"My Meetings"};
+  Object.keys(labels).forEach(function(view){var el=document.querySelector('.nav-item[data-view="'+view+'"] span');if(el)el.textContent=labels[view];});
+  document.getElementById("sidebarUserName").textContent=user.name;
+  document.getElementById("sidebarRole").textContent=user.role;
+  document.getElementById("sidebarInitials").textContent=user.initials;
+  var photo=document.getElementById("sidebarPhoto");
+  photo.hidden=!user.photo;photo.src=user.photo||"";photo.alt=user.photo?user.name:"";
+}
 function launch(role,userId){
   state.role=role;state.userId=role==="admin"?null:userId;saveState();
   document.getElementById("intro").classList.add("hidden");document.dispatchEvent(new Event("hosis:intro:closed"));document.getElementById("app").classList.remove("hidden");
-  var user=role==="admin"?{name:"Hosis Admin",role:"Administrator",initials:"HA"}:USERS[userId];
-  document.getElementById("sidebarUserName").textContent=user.name;document.getElementById("sidebarRole").textContent=user.role;document.getElementById("sidebarAvatar").textContent=user.initials;
+  adminMemberFilter=null;
+  var user=role==="admin"?{name:"Hosis Admin",role:"Administrator",initials:"HA",photo:""}:USERS[userId];
+  applyRoleNavigation(user);
   document.getElementById("priorityCount").textContent=visibleProjects().filter(function(p){return p.priority==="High"}).length;
   currentView="dashboard";render();
 }
@@ -320,6 +420,8 @@ function render(){
   if(currentView==="project")renderProject(currentProjectId);
   else if(currentView==="gallery"||currentView==="priority")renderGallery();
   else if(currentView==="schedule")renderSchedulePage();
+  else if(currentView==="meetings")renderMeetingsPage();
+  else if(currentView==="members"&&state.role==="admin")renderMembersPage();
   else if(DIRECTORIES[currentView]){currentDirectory=currentView;renderDirectory();}
   else if(currentView==="company")renderCompanyProfile();
   else renderDashboard();
@@ -327,21 +429,40 @@ function render(){
 }
 function setHeading(breadcrumb,title){document.getElementById("breadcrumb").textContent=breadcrumb;document.getElementById("pageTitle").textContent=title;}
 function statCard(iconName,value,label){return '<div class="stat-card"><span class="stat-icon">'+icon(iconName)+'</span><strong>'+value+'</strong><small>'+esc(label)+'</small></div>';}
+function memberStats(userId){
+  var projects=state.projects.filter(function(p){return p.assigned.indexOf(userId)>-1;}),tasks=[];
+  projects.forEach(function(p){p.tasks.forEach(function(t){tasks.push(t);});});
+  var today=isoDate(new Date()),week=addDays(today,7);
+  return {projects:projects,open:tasks.filter(function(t){return !t[4];}).length,overdue:tasks.filter(function(t){return !t[4]&&t[2]<today;}).length,dueWeek:tasks.filter(function(t){return !t[4]&&t[2]>=today&&t[2]<=week;}).length};
+}
+function memberCard(userId,selected){
+  var user=USERS[userId],stats=memberStats(userId);
+  return '<button class="member-card'+(selected?' selected':'')+'" data-member-filter="'+userId+'" aria-pressed="'+selected+'"><span class="member-photo"><img src="'+esc(user.photo)+'" alt="'+esc(user.name)+'"></span><span class="member-card-copy"><strong>'+esc(user.name)+'</strong><small>'+esc(user.role)+'</small><span><b>'+stats.projects.length+'</b> projects <b>'+stats.open+'</b> open tasks</span></span>'+icon("arrow-up-right")+'</button>';
+}
+function renderMemberSwitcher(){
+  if(state.role!=="admin")return '<section class="member-focus member-self"><span class="member-photo"><img src="'+esc(USERS[state.userId].photo)+'" alt=""></span><div><span class="section-kicker">MEMBER WORKSPACE</span><h2>'+esc(USERS[state.userId].name)+'</h2><p>'+esc(USERS[state.userId].role)+' · Only your assigned projects and tasks are visible.</p></div></section>';
+  return '<section class="members-strip" aria-labelledby="membersStripTitle"><div class="members-strip-head"><div><span class="section-kicker">TEAM WORKSPACES</span><h2 id="membersStripTitle">Members</h2><p>Select a person to see only their assigned projects, tasks and deadlines.</p></div><button class="member-all'+(!adminMemberFilter?' selected':'')+'" data-member-filter="" aria-pressed="'+(!adminMemberFilter)+'">'+icon("building-2")+'Company View</button></div><div class="member-grid">'+Object.keys(USERS).map(function(id){return memberCard(id,adminMemberFilter===id);}).join("")+'</div></section>';
+}
+function bindMemberFilters(){document.querySelectorAll("[data-member-filter]").forEach(function(button){button.addEventListener("click",function(){adminMemberFilter=button.dataset.memberFilter||null;currentFilters.user="";currentFilters.high=false;currentView="dashboard";render();window.scrollTo(0,0);});});}
 function renderDashboard(){
-  var projects=visibleProjects();
+  var projects=dashboardProjects();
   var high=projects.filter(function(p){return p.priority==="High"}).length;
-  var permitDeadlines=projects.reduce(function(n,p){return n+p.deadlines.filter(function(d){return d[2]==="permit"}).length},0);
-  var tenderDeadlines=projects.reduce(function(n,p){return n+p.deadlines.filter(function(d){return d[2]==="tender"}).length},0);
-  var issues=projects.reduce(function(n,p){return n+p.tasks.filter(function(t){return t[3]==="High"&&!t[4]}).length},0);
-  var overdue=projects.reduce(function(n,p){return n+p.tasks.filter(function(t){return !t[4]&&new Date(t[2])<new Date()}).length},0);
-  setHeading("Portfolio / Overview","Project Delivery & Coordination");
+  var allTasks=[];projects.forEach(function(p){p.tasks.forEach(function(t){allTasks.push(t);});});
+  var today=isoDate(new Date()),week=addDays(today,7);
+  var open=allTasks.filter(function(t){return !t[4]}).length;
+  var overdue=allTasks.filter(function(t){return !t[4]&&t[2]<today;}).length;
+  var dueWeek=allTasks.filter(function(t){return !t[4]&&t[2]>=today&&t[2]<=week;}).length;
+  var focus=state.role==="admin"&&adminMemberFilter?USERS[adminMemberFilter]:state.role==="user"?USERS[state.userId]:null;
+  setHeading(focus?"Members / "+focus.name:"Portfolio / Overview",focus?focus.name+" · Project Workspace":"Project Delivery & Coordination");
   var stageCounts={};Object.keys(STAGES).forEach(function(k){stageCounts[k]=projects.filter(function(p){return p.scope.indexOf(k)>-1}).length});
-  var html='<section class="hero-strip"><div class="hero-copy"><div class="eyebrow">HOSIS ARCHITECTURE</div><h2>Project intelligence,<br>clearly delivered.</h2><p>'+esc(state.role==="admin"?"You are viewing the complete fictional project portfolio.":"You are viewing projects assigned to "+USERS[state.userId].name+".")+'</p></div><div class="hero-actions"><button class="ghost-button" data-go-gallery>'+icon("panels-top-left")+'Explore Projects</button><button class="ghost-button" data-go-schedule>'+icon("gantt-chart-square")+'Open Schedule</button><button class="ghost-button" data-open-ai>'+icon("sparkles")+'Ask Hosis AI</button></div></section>'+
-    '<section class="stat-grid">'+statCard("building-2",projects.length,"Total Active Projects")+statCard("flame",high,"High-Priority Projects")+statCard("badge-check",permitDeadlines,"Permit Deadlines")+statCard("gavel",tenderDeadlines,"Tender Deadlines")+statCard("triangle-alert",issues,"Delivery Issues")+statCard("clock-alert",overdue,"Overdue Tasks")+'</section>'+
+  var html='<section class="hero-strip"><div class="hero-copy"><div class="eyebrow">'+esc(focus?"MEMBER PROJECT WORKSPACE":"HOSIS ARCHITECTURE")+'</div><h2>'+esc(focus?focus.name:"Project intelligence,")+(focus?'':'<br>clearly delivered.')+'</h2><p>'+esc(focus?"Every assigned project, task, meeting and deadline in one focused view.":"Company-wide project delivery, team workload and coordination.")+'</p></div><div class="hero-actions"><button class="ghost-button" data-go-gallery>'+icon("panels-top-left")+'Open Projects</button><button class="ghost-button" data-go-meetings>'+icon("calendar-clock")+'Meetings</button>'+(adminMemberFilter?'<button class="ghost-button" data-member-filter="">'+icon("users")+'Company View</button>':'')+'</div></section>'+
+    renderMemberSwitcher()+
+    '<section class="stat-grid role-stat-grid">'+statCard("building-2",projects.length,focus?"Assigned Projects":"Active Projects")+statCard("list-checks",open,"Open Tasks")+statCard("calendar-days",dueWeek,"Due This Week")+statCard("clock-alert",overdue,"Overdue Tasks")+(state.role==="admin"&&!focus?statCard("flame",high,"High-Priority Projects"):"")+'</section>'+
     '<div class="dashboard-grid">'+renderDashboardTasks(projects)+'<section class="panel"><div class="panel-head"><h3>Projects by Stage</h3><button data-go-gallery>Filter</button></div><div class="stage-bars">'+Object.keys(STAGES).map(function(k){var pct=projects.length?Math.round(stageCounts[k]/projects.length*100):0;return '<div><div class="stage-bar-head"><span>'+icon(STAGES[k].icon)+' '+esc(STAGES[k].label)+'</span><b>'+stageCounts[k]+'</b></div><div class="stage-track"><div class="stage-fill stage-'+k+'" style="width:'+pct+'%"></div></div></div>'}).join("")+'</div></section></div>'+
+    '<div class="section-title dashboard-project-title"><div><span class="section-kicker">'+esc(focus?"ASSIGNED PORTFOLIO":"ACTIVE PORTFOLIO")+'</span><h2>'+esc(focus?focus.name+"’s Projects":"Projects")+'</h2><p>'+projects.length+' projects in this workspace.</p></div><button class="secondary-button" data-go-gallery>View all projects</button></div><section class="project-grid dashboard-projects">'+projects.map(projectCard).join("")+'</section>'+
     '<section class="panel timeline-preview dashboard-schedule"><div class="panel-head"><div><h3>Project Schedule</h3><small>Stage dates and overlaps across all visible projects</small></div><button data-go-schedule>Open full timeline</button></div>'+renderTimeline(projects,true)+'</section>'+
-    '<div class="section-title"><div><h2>Featured Projects</h2><p>Visual portfolio of current fictional work.</p></div></div><section class="project-grid">'+projects.slice(0,3).map(projectCard).join("")+'</section>';
-  document.getElementById("content").innerHTML=html;bindDashboardTasks();bindCommon();
+    '';
+  document.getElementById("content").innerHTML=html;bindDashboardTasks();bindMemberFilters();bindCommon();
 }
 var showCompletedTasks=false;
 function renderDashboardTasks(projects){
@@ -364,6 +485,29 @@ function bindDashboardTasks(){
     if(next)next.focus({preventScroll:true});
     toast(task[4]?'Task marked complete':'Task reopened');
   });});
+}
+
+function meetingActionState(project,action){var task=project.tasks.find(function(t){return t[0]===action.taskId;});return task||[action.taskId,action.title,action.due,action.priority,false];}
+function meetingActionRow(project,action,index,meetingIndex){
+  var task=meetingActionState(project,action);
+  return '<div class="meeting-action'+(task[4]?' complete':'')+'"><span class="meeting-action-check">'+(task[4]?icon("check"):icon("circle"))+'</span><div><strong>'+esc(task[1])+'</strong><small>'+esc(action.assignee||"Unassigned")+' · Due '+formatDate(task[2])+'</small></div><span class="pill '+priorityClass(task[3])+'">'+esc(task[3])+'</span>'+(state.role==="admin"?'<div class="row-actions">'+adminButton("Edit","meetingActions",index,'data-meeting-index="'+meetingIndex+'"')+deleteButton("meetingActions",index,'data-meeting-index="'+meetingIndex+'"')+'</div>':'')+'</div>';
+}
+function renderProjectMeetings(project){
+  var meetings=project.meetings.slice().sort(function(a,b){return (b.date+b.time).localeCompare(a.date+a.time);});
+  return '<section class="panel project-meetings"><div class="panel-head"><div><h3>Meetings</h3><small>Dated minutes, decisions and action items linked to Project Tasks</small></div>'+(state.role==="admin"?'<button data-add="meetings">'+icon("plus")+' Add meeting</button>':'<span class="count-chip">'+meetings.length+' meetings</span>')+'</div><div class="meeting-list">'+(meetings.length?meetings.map(function(meeting){var originalIndex=project.meetings.indexOf(meeting);return '<article class="meeting-card"><div class="meeting-date"><b>'+esc(new Date(meeting.date+"T12:00:00").toLocaleDateString("en-CA",{day:"2-digit"}))+'</b><span>'+esc(new Date(meeting.date+"T12:00:00").toLocaleDateString("en-CA",{month:"short"}))+'</span></div><div class="meeting-body"><div class="meeting-card-head"><div><span class="section-kicker">'+esc(stageLabel(meeting.stage))+' · '+esc(meeting.time||"Time TBD")+'</span><h4>'+esc(meeting.title)+'</h4><p>'+icon("map-pin")+esc(meeting.location||"Location TBD")+' · '+esc(meeting.attendees||"Attendees not added")+'</p></div>'+(state.role==="admin"?'<div class="row-actions">'+adminButton("Edit","meetings",originalIndex)+deleteButton("meetings",originalIndex)+'</div>':'')+'</div>'+(meeting.notes?'<p class="meeting-notes">'+esc(meeting.notes)+'</p>':'')+'<div class="meeting-actions-head"><strong>Action Items</strong>'+(state.role==="admin"?'<button class="tiny-action action-add" data-add="meetingActions" data-index="-1" data-meeting-index="'+originalIndex+'">'+icon("list-plus")+'Add task from meeting</button>':'')+'</div><div class="meeting-actions">'+(meeting.actions.length?meeting.actions.map(function(action,index){return meetingActionRow(project,action,index,originalIndex);}).join(""):'<p class="inline-empty">No action items recorded.</p>')+'</div></div></article>';}).join(""):'<p class="directory-empty">No meetings have been added to this project.</p>')+'</div></section>';
+}
+function renderMeetingsPage(){
+  var projects=state.role==="admin"&&adminMemberFilter?dashboardProjects():visibleProjects(),rows=[];
+  projects.forEach(function(project){project.meetings.forEach(function(meeting){rows.push({project:project,meeting:meeting});});});
+  rows.sort(function(a,b){return (b.meeting.date+b.meeting.time).localeCompare(a.meeting.date+a.meeting.time);});
+  setHeading("Workspace / Meetings",state.role==="admin"?"Project Meetings":"My Meetings");
+  var html='<div class="section-title meetings-title"><div><span class="section-kicker">COORDINATION RECORD</span><h2>'+(state.role==="admin"?"Project Meetings":"My Meetings")+'</h2><p>Meeting dates, project context and action items. Add or edit a meeting inside its project.</p></div><span class="directory-count">'+rows.length+' meetings</span></div><section class="meeting-overview-grid">'+(rows.length?rows.map(function(row){var m=row.meeting,p=row.project;return '<article class="meeting-overview-card"><div class="meeting-date"><b>'+esc(new Date(m.date+"T12:00:00").toLocaleDateString("en-CA",{day:"2-digit"}))+'</b><span>'+esc(new Date(m.date+"T12:00:00").toLocaleDateString("en-CA",{month:"short"}))+'</span></div><div><span class="section-kicker">'+esc(p.number)+' · '+esc(m.time||"Time TBD")+'</span><h3>'+esc(m.title)+'</h3><p>'+esc(p.name)+'</p><div class="meeting-overview-meta"><span>'+icon("map-pin")+esc(m.location||"Location TBD")+'</span><span>'+icon("list-checks")+m.actions.length+' actions</span></div><button class="task-project-link" data-project="'+esc(p.id)+'">Open project '+icon("arrow-up-right")+'</button></div></article>';}).join(""):'<div class="panel directory-empty"><h3>No meetings yet</h3><p>Add the first meeting from a project page.</p></div>')+'</section>';
+  document.getElementById("content").innerHTML=html;bindCommon();
+}
+function renderMembersPage(){
+  setHeading("Workspace / Members","Members & Workload");
+  var html='<div class="section-title members-title"><div><span class="section-kicker">TEAM WORKSPACES</span><h2>Members</h2><p>Open a member workspace to review every assigned project, task, deadline and meeting.</p></div><button class="secondary-button" data-member-filter="">'+icon("building-2")+'Company Dashboard</button></div><section class="members-page-grid">'+Object.keys(USERS).map(function(id){var user=USERS[id],stats=memberStats(id);return '<article class="member-profile-card"><img src="'+esc(user.photo)+'" alt="'+esc(user.name)+'"><div><span class="section-kicker">'+esc(user.role)+'</span><h3>'+esc(user.name)+'</h3><div class="member-metrics"><span><b>'+stats.projects.length+'</b>Projects</span><span><b>'+stats.open+'</b>Open Tasks</span><span><b>'+stats.dueWeek+'</b>Due This Week</span><span><b>'+stats.overdue+'</b>Overdue</span></div><button class="primary-button" data-member-filter="'+id+'">Open '+esc(user.name.split(" ")[0])+"’s workspace"+icon("arrow-right")+'</button></div></article>';}).join("")+'</section>';
+  document.getElementById("content").innerHTML=html;bindMemberFilters();refreshIcons();
 }
 
 var DIRECTORIES={
@@ -425,15 +569,15 @@ function filterProject(p){
   return matches&&(!currentFilters.type||p.type===currentFilters.type)&&(!currentFilters.status||p.status===currentFilters.status)&&(!currentFilters.priority||p.priority===currentFilters.priority)&&(!currentFilters.user||p.assigned.indexOf(currentFilters.user)>-1)&&(!currentFilters.high||p.priority==="High");
 }
 function renderGallery(){
-  var projects=visibleProjects().filter(filterProject);
-  setHeading("Portfolio / Project Gallery",currentView==="priority"?"High-Priority Projects":"Project Gallery");
+  var projects=workspaceProjects().filter(filterProject),member=state.role==="admin"&&adminMemberFilter?USERS[adminMemberFilter]:null;
+  setHeading(member?"Members / "+member.name:"Portfolio / Projects",currentView==="priority"?"High-Priority Projects":member?member.name+" · Projects":state.role==="user"?"My Projects":"Projects");
   var userOptions=Object.keys(USERS).map(function(k){return '<option value="'+k+'"'+(currentFilters.user===k?" selected":"")+'>'+esc(USERS[k].name)+'</option>'}).join("");
   var html='<div class="section-title"><div><h2>'+(currentView==="priority"?"Priority Focus":"Architecture Portfolio")+'</h2><p>'+projects.length+' fictional projects match the current view.</p></div></div>'+
     '<section class="filter-bar"><label class="filter-field">'+icon("search")+'<input id="gallerySearch" placeholder="Search project name or number" value="'+esc(currentFilters.query)+'"></label>'+
     '<label class="filter-field">'+icon("building-2")+'<select data-filter="type"><option value="">All project types</option>'+allTypes().map(function(t){return '<option'+(currentFilters.type===t?" selected":"")+'>'+esc(t)+'</option>'}).join("")+'</select></label>'+
     '<label class="filter-field">'+icon("activity")+'<select data-filter="status"><option value="">All statuses</option>'+allStatuses().map(function(t){return '<option'+(currentFilters.status===t?" selected":"")+'>'+esc(t)+'</option>'}).join("")+'</select></label>'+
     '<label class="filter-field">'+icon("flag")+'<select data-filter="priority"><option value="">All priorities</option>'+["High","Medium","Low"].map(function(t){return '<option'+(currentFilters.priority===t?" selected":"")+'>'+t+'</option>'}).join("")+'</select></label>'+
-    (state.role==="admin"?'<label class="filter-field">'+icon("user-round")+'<select data-filter="user"><option value="">All assigned users</option>'+userOptions+'</select></label>':'')+
+    (state.role==="admin"&&!adminMemberFilter?'<label class="filter-field">'+icon("user-round")+'<select data-filter="user"><option value="">All assigned users</option>'+userOptions+'</select></label>':'')+
     '<button id="highToggle" class="filter-toggle'+(currentFilters.high?" active":"")+'">'+icon("flame")+' High Priority</button></section>'+
     (projects.length?'<section class="project-grid">'+projects.map(projectCard).join("")+'</section>':'<div class="empty-state">'+icon("search-x")+'<h3>No projects found</h3><p>Adjust the filters to see more projects.</p></div>');
   document.getElementById("content").innerHTML=html;
@@ -465,7 +609,7 @@ function renderTimeline(projects,compact){
   return '<div class="timeline-scroll"><div class="timeline-canvas">'+head+rows+'<div class="timeline-legend">'+Object.keys(STAGES).map(function(k){return '<span><i class="stage-'+k+'"></i>'+esc(STAGES[k].label)+'</span>'}).join("")+'</div></div></div>';
 }
 function renderSchedulePage(){
-  var projects=visibleProjects();setHeading("Portfolio / Schedule","Project Schedule & Timeline");
+  var projects=workspaceProjects(),member=state.role==="admin"&&adminMemberFilter?USERS[adminMemberFilter]:null;setHeading(member?"Members / "+member.name:"Portfolio / Schedule",member?member.name+" · Schedule":state.role==="user"?"My Project Schedule":"Project Schedule & Timeline");
   var html='<div class="section-title schedule-title"><div><div class="eyebrow dark">PORTFOLIO PLANNING</div><h2>Project Schedule</h2><p>Compare dated stages, see current position and identify overlapping work.</p></div><span class="schedule-count">'+projects.length+' active projects</span></div><section class="panel schedule-panel"><div class="timeline-guide">'+icon("info")+' Each colour is a project stage. Horizontal alignment shows work happening at the same time.</div>'+renderTimeline(projects,false)+'</section>';
   document.getElementById("content").innerHTML=html;bindCommon();
 }
@@ -489,12 +633,13 @@ function renderProject(id){
   var tasks=p.tasks.map(function(t,i){return '<div class="task-row'+(t[4]?" done":"")+'"><button class="task-check" data-task="'+t[0]+'" aria-label="'+esc((t[4]?"Reopen ":"Complete ")+t[1])+'" aria-pressed="'+t[4]+'">'+(t[4]?icon("check"):"")+'</button><div><strong>'+esc(t[1])+'</strong><small>'+esc(t[3]+" priority · Due "+formatDate(t[2]))+'</small></div><span class="pill '+priorityClass(t[3])+'">'+esc(t[3])+'</span><div class="row-actions">'+adminButton("Edit","tasks",i)+deleteButton("tasks",i)+'</div></div>'}).join("");
   var adminControls=state.role==="admin"?'<select id="statusSelect" class="admin-select" aria-label="Change project status">'+allStatuses().concat(["Complete","On Hold"]).filter(function(v,i,a){return a.indexOf(v)===i}).map(function(v){return '<option'+(v===p.status?" selected":"")+'>'+esc(v)+'</option>'}).join("")+'</select><select id="prioritySelect" class="admin-select" aria-label="Change priority">'+["High","Medium","Low"].map(function(v){return '<option'+(v===p.priority?" selected":"")+'>'+v+' Priority</option>'}).join("")+'</select>':"";
   var html=
-    '<section class="project-hero"><img src="'+esc(p.image)+'" alt="'+esc(p.name)+'"><div class="project-hero-top"><button class="back-button" data-go-gallery>'+icon("arrow-left")+'Project Gallery</button><div class="card-tags"><span class="pill">'+esc(p.status)+'</span><span class="pill '+priorityClass(p.priority)+'">'+esc(p.priority)+' Priority</span></div></div><div class="project-hero-main"><div><div class="eyebrow">'+esc(p.number+" · "+p.type)+'</div><h1>'+esc(p.name)+'</h1><p>'+icon("map-pin")+' '+esc(p.address)+' &nbsp; · &nbsp; '+esc(p.area)+'</p></div><div class="project-hero-actions">'+adminControls+(state.role==="admin"?'<button class="ghost-button" data-edit="project" data-index="-1">'+icon("square-pen")+'Edit Project</button><button class="ghost-button" id="editScope">'+icon("sliders-horizontal")+'Edit Scope</button>':'')+'<button class="ghost-button" onclick="window.print()">'+icon("printer")+'Print / PDF</button></div></div></section>'+
+    '<section class="project-hero"><img src="'+esc(p.image)+'" alt="'+esc(p.name)+'"><div class="project-hero-top"><button class="back-button" data-go-gallery>'+icon("arrow-left")+'Projects</button><div class="card-tags"><span class="pill">'+esc(p.status)+'</span><span class="pill '+priorityClass(p.priority)+'">'+esc(p.priority)+' Priority</span></div></div><div class="project-hero-main"><div><div class="eyebrow">'+esc(p.number+" · "+p.type)+'</div><h1>'+esc(p.name)+'</h1><p>'+icon("map-pin")+' '+esc(p.address)+' &nbsp; · &nbsp; '+esc(p.area)+'</p></div><div class="project-hero-actions">'+adminControls+(state.role==="admin"?'<button class="ghost-button" data-edit="project" data-index="-1">'+icon("square-pen")+'Edit Project</button><button class="ghost-button" id="editScope">'+icon("sliders-horizontal")+'Edit Scope</button>':'')+'<button class="ghost-button" onclick="window.print()">'+icon("printer")+'Print / PDF</button></div></div></section>'+
     '<div class="project-layout"><div class="detail-stack">'+
       '<section class="panel"><div class="panel-head"><h3>Project Overview</h3>'+(state.role==="admin"?'<button data-edit="project" data-index="-1">'+icon("pencil")+' Edit overview</button>':'<span class="pill '+priorityClass(p.priority)+'">'+esc(p.priority)+'</span>')+'</div><p class="overview-summary">'+esc(p.summary)+'</p><div class="overview-grid">'+
       [["Project Number",p.number],["Project Type",p.type],["Project Area",p.area],["Client",p.client],["Owner",p.owner],["General Contractor",p.contractor],["Address",p.address],["Current Status",p.status],["Priority",p.priority]].map(function(x){return '<div class="info-cell"><small>'+esc(x[0])+'</small><strong>'+esc(x[1])+'</strong></div>'}).join("")+
       '</div></section>'+
       '<section class="panel"><div class="panel-head"><h3>Project Scope</h3>'+(state.role==="admin"?'<button id="editScopeInline">Edit stages</button>':'')+'</div><div class="scope-stage-list">'+scope+'</div><div id="stageContent" class="stage-content">'+renderStageContent(p,activeStage)+'</div></section>'+
+      renderProjectMeetings(p)+
       '<section class="panel"><div class="panel-head"><div><h3>Project Schedule</h3><small>Dated stages show sequence and overlap</small></div>'+(state.role==="admin"?'<button data-add="schedule">'+icon("plus")+' Add schedule item</button>':'')+'</div>'+renderProjectSchedule(p)+'</section>'+
       '<section class="panel"><div class="panel-head"><h3>Project Team</h3>'+(state.role==="admin"?'<button data-add="team">'+icon("user-plus")+' Add team member</button>':'<span class="pill">'+p.assigned.length+' assigned users</span>')+'</div><div class="team-grid">'+p.team.map(teamCard).join("")+'</div></section>'+
       '<section class="panel"><div class="panel-head"><h3>Project Companies</h3>'+(state.role==="admin"?'<button data-add="companies">'+icon("building-2")+' Add company</button>':'<span>'+p.companies.length+' companies</span>')+'</div><div class="company-grid">'+p.companies.map(companyCard).join("")+'</div></section>'+
@@ -520,8 +665,23 @@ function renderProjectSchedule(project){
   var bounds=timelineBounds([project]),months=monthMarkers(bounds);
   return '<div class="project-schedule"><div class="project-schedule-head"><span>Stage and dates</span><div>'+months.map(function(m){return '<span style="left:'+m.left+'%">'+esc(m.label)+'</span>'}).join("")+'</div></div>'+project.schedule.map(function(s,i){var left=timelinePosition(s.start,bounds),right=timelinePosition(s.end,bounds);return '<div class="project-schedule-row"><div class="schedule-row-label"><span class="record-icon stage-'+s.stage+'">'+icon(STAGES[s.stage].icon)+'</span><div><strong>'+esc(stageLabel(s.stage))+'</strong><small>'+formatDate(s.start)+' — '+formatDate(s.end)+'</small></div><span class="record-status">'+esc(s.status)+'</span><div class="row-actions">'+adminButton("Edit","schedule",i)+deleteButton("schedule",i)+'</div></div><div class="schedule-row-track">'+months.map(function(m){return '<i style="left:'+m.left+'%"></i>'}).join("")+'<span class="schedule-row-bar stage-'+s.stage+'" style="left:'+left+'%;width:'+Math.max(2,right-left)+'%"></span></div></div>'}).join("")+'</div>';
 }
+function recordIsOpen(status){return !/^(complete|completed|closed|issued|approved|reviewed|answered|paid)$/i.test(status||"");}
+function renderRegisterWorkspace(project,definitions,registers,kind){
+  return '<div class="register-grid">'+Object.keys(definitions).map(function(key){var config=definitions[key],items=registers[key]||[],open=items.filter(function(item){return recordIsOpen(item.status);}).length;return '<section class="register-card" data-register-group="'+key+'"><div class="register-head"><span class="record-icon">'+icon(config.icon)+'</span><div><h4>'+esc(config.label)+'</h4><p>'+esc(config.description)+'</p></div><span class="register-count"><b>'+items.length+'</b> total'+(open?' · '+open+' open':'')+'</span></div><div class="register-list">'+(items.length?items.map(function(item,index){return '<article class="register-row"><div class="register-number">'+esc(item.number||config.prefix)+'</div><div class="register-copy"><strong>'+esc(item.title)+'</strong><small>'+formatDate(item.date)+(item.due?' · Due '+formatDate(item.due):'')+(item.responsible?' · '+esc(item.responsible):'')+'</small>'+(item.cost?'<span class="register-cost">'+esc(item.cost)+'</span>':'')+'</div><span class="record-status">'+esc(item.status||"Open")+'</span>'+(state.role==="admin"?'<div class="row-actions">'+adminButton("Edit",kind,index,'data-register-key="'+key+'"')+deleteButton(kind,index,'data-register-key="'+key+'"')+'</div>':'')+'</article>';}).join(""):'<p class="inline-empty">No records yet.</p>')+'</div>'+(state.role==="admin"?'<button class="register-add" data-add="'+kind+'" data-register-key="'+key+'">'+icon("plus")+' Add '+esc(config.prefix)+' record</button>':'')+'</section>';}).join("")+'</div>';
+}
+function renderConstructionWorkspace(project){
+  var total=0,open=0;Object.keys(CONSTRUCTION_REGISTERS).forEach(function(key){var list=project.constructionRegisters[key]||[];total+=list.length;open+=list.filter(function(item){return recordIsOpen(item.status);}).length;});
+  return '<div class="stage-workspace-head"><div><span class="section-kicker">CONSTRUCTION CONTROL</span><h3>'+icon("hard-hat")+' Construction Administration</h3><p>Each document type is a live register with its own records, status, dates and responsibility.</p></div><div class="workspace-metrics"><span><b>'+total+'</b>Total Records</span><span><b>'+open+'</b>Open / Pending</span></div></div>'+renderRegisterWorkspace(project,CONSTRUCTION_REGISTERS,project.constructionRegisters,"constructionRegister");
+}
+function bidderTotal(bidder){return Number(bidder.baseBid)||0;}
+function renderTenderWorkspace(project){
+  var tender=project.tenderData,bids=tender.bidders.slice().sort(function(a,b){return bidderTotal(a)-bidderTotal(b);}),winner=bids.find(function(b){return b.winner;});
+  return '<div class="stage-workspace-head"><div><span class="section-kicker">TENDER + POST-TENDER</span><h3>'+icon("gavel")+' Bid Management</h3><p>Track issue and closing dates, bidders, base bids, separate prices, clarifications and award.</p></div><div class="tender-phase"><span>Current phase</span><b>'+esc(tender.phase||"Tender")+'</b></div></div><section class="tender-metrics"><span><small>Pre-Tender Estimate</small><b>'+formatCurrency(tender.estimate)+'</b></span><span><small>Tender Issued</small><b>'+formatDate(tender.issueDate)+'</b></span><span><small>Tender Closing</small><b>'+formatDate(tender.closingDate)+'</b></span><span><small>Recommended Bidder</small><b>'+esc(winner?winner.name:"Not selected")+'</b></span></section><section class="bidder-panel"><div class="panel-head"><div><h3>Bidders & Bid Comparison</h3><small>Base bids and separate prices remain visible as distinct values.</small></div>'+(state.role==="admin"?'<div class="tender-actions"><button data-edit="tenderSettings" data-index="-1">'+icon("settings-2")+'Tender setup</button><button data-add="bidders">'+icon("user-plus")+'Add bidder</button></div>':'')+'</div><div class="bid-table-wrap"><table class="bid-table"><thead><tr><th>Bidder</th><th>Base Bid</th><th>Separate Prices</th><th>Status</th><th></th></tr></thead><tbody>'+bids.map(function(bidder){var index=tender.bidders.indexOf(bidder);return '<tr class="'+(bidder.winner?'winner':'')+'"><td><strong>'+esc(bidder.name)+'</strong><small>'+esc(bidder.contact||"Contact not added")+'</small>'+(bidder.winner?'<span class="winner-badge">'+icon("award")+'Recommended</span>':'')+'</td><td><b>'+formatCurrency(bidder.baseBid)+'</b></td><td><span class="separate-prices">'+esc(bidder.separatePrices||"None recorded")+'</span></td><td><span class="record-status">'+esc(bidder.status||"Invited")+'</span></td><td>'+(state.role==="admin"?'<div class="row-actions">'+adminButton("Edit","bidders",index)+deleteButton("bidders",index)+'</div>':'')+'</td></tr>';}).join("")+'</tbody></table></div></section><div class="post-tender-head"><span class="section-kicker">TENDER RECORDS</span><h3>Tender & Post-Tender Registers</h3></div>'+renderRegisterWorkspace(project,TENDER_REGISTERS,tender.registers,"tenderRegister");
+}
 function renderStageContent(project,key){
   if(project.scope.indexOf(key)===-1) return "";
+  if(key==="construction")return renderConstructionWorkspace(project);
+  if(key==="tender")return renderTenderWorkspace(project);
   var items=project.stageItems[key]||[];
   var completion=stageCompletion(project,key);
   return '<div class="panel-head stage-detail-head"><div><h3>'+icon(STAGES[key].icon)+" "+esc(STAGES[key].label)+'</h3><small>'+esc(STAGES[key].description)+'</small></div><div class="stage-head-actions"><span class="workflow-count" role="status">'+completion.complete+'/'+completion.total+' milestones complete</span></div></div><div class="workflow-progress" role="progressbar" aria-label="'+esc(stageLabel(key))+' completion" aria-valuemin="0" aria-valuemax="100" aria-valuenow="'+completion.percent+'"><span style="width:'+completion.percent+'%"></span></div><div class="stage-records workflow-list">'+items.map(function(x,i){var status=workflowStatus(x.status);return '<div class="stage-record workflow-row" data-record-id="'+x.id+'"><span class="record-icon">'+icon(x.icon||STAGES[key].icon)+'</span><div class="milestone-copy"><strong>'+esc(x.title)+(x.optional?'<span class="optional-tag">Optional</span>':'')+'</strong>'+(x.detail||x.date?'<small>'+esc(x.detail)+(x.date?' · '+formatDate(x.date):'')+'</small>':'')+'</div><div class="milestone-controls"><div class="row-actions">'+adminButton("Edit","stageItems",i,'data-stage-key="'+key+'"')+deleteButton("stageItems",i,'data-stage-key="'+key+'"')+'</div>'+(state.role==="admin"?'<select class="milestone-status" data-status="'+status.toLowerCase().replace(/[^a-z]+/g,"-")+'" data-milestone-status="'+i+'" data-stage-key="'+key+'" aria-label="Status: '+esc(x.title)+'">'+WORKFLOW_STATUSES.map(function(s){return '<option'+(s===status?' selected':'')+'>'+s+'</option>';}).join("")+'</select>':'<span class="milestone-status read-only" data-status="'+status.toLowerCase().replace(/[^a-z]+/g,"-")+'">'+status+'</span>')+'</div></div>';}).join("")+(items.length?'':'<p class="workflow-empty">No milestones yet.</p>')+'</div>'+(state.role==="admin"?'<button class="add-milestone" data-add="stageItems" data-stage-key="'+key+'">'+icon("plus")+' Add custom milestone</button>':'')+'<p class="workflow-help">N/A items are excluded from progress. Optional items count until marked N/A.</p>';
@@ -561,6 +721,30 @@ function editorConfig(project,kind,index,stageKey){
     item=creating?["New Document",project.scope[0],"PDF · Pending upload"]:project.documents[index];
     return {title:creating?"Add Document":"Edit Document",fields:[{name:"title",label:"Document Name",value:item[0],wide:true},{name:"stage",label:"Stage",type:"select",options:stageChoices(),value:item[1]},{name:"meta",label:"File Type / Size",value:item[2]}],save:function(v){var row=[v.title,v.stage,v.meta];if(creating)project.documents.push(row);else project.documents[index]=row}};
   }
+  if(kind==="meetings"){
+    item=creating?{id:uid("meeting"),title:"Project Coordination Meeting",date:"2026-09-08",time:"10:00",stage:project.scope[0],location:"Microsoft Teams",attendees:"",notes:"",actions:[]}:project.meetings[index];
+    return {title:creating?"Add Project Meeting":"Edit Project Meeting",description:"Record the meeting date, participants and decisions. Action items are added separately and become Project Tasks.",fields:[{name:"title",label:"Meeting Title",value:item.title,wide:true},{name:"date",label:"Meeting Date",type:"date",value:item.date},{name:"time",label:"Time",type:"time",value:item.time||""},{name:"stage",label:"Related Stage",type:"select",options:stageChoices(),value:item.stage},{name:"location",label:"Location / Link",value:item.location||"",required:false},{name:"attendees",label:"Attendees",value:item.attendees||"",wide:true,required:false},{name:"notes",label:"Minutes / Decisions",type:"textarea",value:item.notes||"",wide:true}],save:function(v){Object.assign(item,v);if(creating)project.meetings.push(item);}};
+  }
+  if(kind==="meetingActions"){
+    var meeting=project.meetings[Number(stageKey)],action=creating?{id:uid("action"),title:"",assignee:"",due:meeting.date,priority:"Medium",taskId:uid("task")}:meeting.actions[index];
+    var linked=creating?null:project.tasks.find(function(task){return task[0]===action.taskId;});
+    return {title:creating?"Add Meeting Action & Project Task":"Edit Meeting Action",description:"This action is synchronized with Project Tasks. Changing its title, due date, priority or completion updates both locations.",fields:[{name:"title",label:"Action / Task",value:linked?linked[1]:action.title,wide:true},{name:"assignee",label:"Assigned To",value:action.assignee||""},{name:"due",label:"Due Date",type:"date",value:linked?linked[2]:action.due},{name:"priority",label:"Priority",type:"select",options:[["High","High"],["Medium","Medium"],["Low","Low"]],value:linked?linked[3]:action.priority},{name:"complete",label:"Completed",type:"checkbox",value:linked?linked[4]:false}],save:function(v){action.title=v.title;action.assignee=v.assignee;action.due=v.due;action.priority=v.priority;var task=project.tasks.find(function(row){return row[0]===action.taskId;});var row=[action.taskId,v.title,v.due,v.priority,v.complete,{meetingId:meeting.id}];if(task)project.tasks[project.tasks.indexOf(task)]=row;else project.tasks.push(row);if(creating)meeting.actions.push(action);}};
+  }
+  if(kind==="constructionRegister"||kind==="tenderRegister"){
+    var definitions=kind==="constructionRegister"?CONSTRUCTION_REGISTERS:TENDER_REGISTERS;
+    var registers=kind==="constructionRegister"?project.constructionRegisters:project.tenderData.registers;
+    var config=definitions[stageKey],list=registers[stageKey];
+    item=creating?registerRecord(config.prefix,list.length+1,"New "+config.label.replace(/s$/,""),"Open","2026-09-01","","Project Team",""):list[index];
+    return {title:(creating?"Add ":"Edit ")+config.label+" Record",description:"Maintain a separate dated register entry with status, responsibility and cost where applicable.",fields:[{name:"number",label:"Record Number",value:item.number},{name:"title",label:"Title / Subject",value:item.title,wide:true},{name:"status",label:"Status",value:item.status},{name:"date",label:"Date Issued / Received",type:"date",value:item.date},{name:"due",label:"Response / Due Date",type:"date",value:item.due||"",required:false},{name:"responsible",label:"Responsible Party",value:item.responsible||"",required:false},{name:"cost",label:"Cost / Value",value:item.cost||"",required:false},{name:"description",label:"Notes / Description",type:"textarea",value:item.description||"",wide:true,required:false}],save:function(v){Object.assign(item,v);if(creating)list.push(item);}};
+  }
+  if(kind==="bidders"){
+    item=creating?{id:uid("bidder"),name:"",contact:"",baseBid:0,separatePrices:"",status:"Invited",winner:false,notes:""}:project.tenderData.bidders[index];
+    return {title:creating?"Add Tender Bidder":"Edit Tender Bidder",description:"Enter the base bid separately from separate prices. Only one bidder can be marked as recommended.",fields:[{name:"name",label:"Bidder / Contractor",value:item.name,wide:true},{name:"contact",label:"Contact Person",value:item.contact||"",required:false},{name:"baseBid",label:"Base Bid (CAD)",type:"number",value:item.baseBid||0},{name:"separatePrices",label:"Separate Prices",type:"textarea",value:item.separatePrices||"",wide:true,required:false},{name:"status",label:"Bid Status",type:"select",options:[["Invited","Invited"],["Submitted","Submitted"],["Clarification","Clarification"],["Recommended","Recommended"],["Unsuccessful","Unsuccessful"]],value:item.status||"Invited"},{name:"winner",label:"Recommended / Winning Bidder",type:"checkbox",value:!!item.winner},{name:"notes",label:"Bid Notes / Exclusions",type:"textarea",value:item.notes||"",wide:true,required:false}],save:function(v){v.baseBid=Number(v.baseBid)||0;if(v.winner)project.tenderData.bidders.forEach(function(b){b.winner=false;});Object.assign(item,v);if(creating)project.tenderData.bidders.push(item);}};
+  }
+  if(kind==="tenderSettings"){
+    item=project.tenderData;
+    return {title:"Tender Setup",description:"Manage the overall Tender and Post-Tender phase dates and estimate.",fields:[{name:"phase",label:"Current Phase",type:"select",options:[["Tender","Tender"],["Post-Tender","Post-Tender"],["Awarded","Awarded"]],value:item.phase||"Tender"},{name:"issueDate",label:"Tender Issue Date",type:"date",value:item.issueDate},{name:"closingDate",label:"Tender Closing Date",type:"date",value:item.closingDate},{name:"estimate",label:"Pre-Tender Estimate (CAD)",type:"number",value:item.estimate||0}],save:function(v){v.estimate=Number(v.estimate)||0;Object.assign(item,v);}};
+  }
   if(kind==="stageItems"){
     item=creating?{id:uid("rec"),title:"",detail:"",status:"Not started",icon:STAGES[stageKey].icon,date:"",optional:false}:project.stageItems[stageKey][index];
     return {title:(creating?"Add ":"Edit ")+stageLabel(stageKey)+" Milestone",fields:[{name:"title",label:"Milestone Name",value:item.title,wide:true},{name:"detail",label:"Details / Comment",type:"textarea",value:item.detail,wide:true},{name:"status",label:"Status",type:"select",options:WORKFLOW_STATUSES.map(function(s){return [s,s];}),value:workflowStatus(item.status)},{name:"date",label:"Date",type:"date",value:item.date||"",required:false},{name:"optional",label:"Optional milestone",type:"checkbox",value:!!item.optional}],save:function(v){Object.assign(item,v);if(creating)project.stageItems[stageKey].push(item)}};
@@ -590,7 +774,15 @@ function saveEditor(form){
 }
 function deleteRecord(project,kind,index,stageKey){
   if(!confirm("Delete this record?"))return;
-  if(kind==="stageItems")project.stageItems[stageKey].splice(index,1);else project[kind].splice(index,1);
+  if(kind==="stageItems")project.stageItems[stageKey].splice(index,1);
+  else if(kind==="meetingActions"){
+    var meeting=project.meetings[Number(stageKey)],action=meeting.actions[index];
+    project.tasks=project.tasks.filter(function(task){return task[0]!==action.taskId;});meeting.actions.splice(index,1);
+  }
+  else if(kind==="constructionRegister")project.constructionRegisters[stageKey].splice(index,1);
+  else if(kind==="tenderRegister")project.tenderData.registers[stageKey].splice(index,1);
+  else if(kind==="bidders")project.tenderData.bidders.splice(index,1);
+  else project[kind].splice(index,1);
   saveState();renderProject(project.id);toast("Record deleted");
 }
 function bindAdminEditor(project){
@@ -604,9 +796,9 @@ function bindAdminEditor(project){
     document.querySelector('[data-stage="'+key+'"] small').textContent=completion.percent+"% complete";
     toast("Milestone status saved");
   });});
-  document.querySelectorAll("[data-edit]").forEach(function(b){b.addEventListener("click",function(){openEditor(project,b.dataset.edit,Number(b.dataset.index),b.dataset.stageKey||null)})});
-  document.querySelectorAll("[data-add]").forEach(function(b){b.addEventListener("click",function(){openEditor(project,b.dataset.add,-1,b.dataset.stageKey||null)})});
-  document.querySelectorAll("[data-delete]").forEach(function(b){b.addEventListener("click",function(){deleteRecord(project,b.dataset.delete,Number(b.dataset.index),b.dataset.stageKey||null)})});
+  document.querySelectorAll("[data-edit]").forEach(function(b){b.addEventListener("click",function(){openEditor(project,b.dataset.edit,Number(b.dataset.index),b.dataset.stageKey||b.dataset.meetingIndex||b.dataset.registerKey||null)})});
+  document.querySelectorAll("[data-add]").forEach(function(b){b.addEventListener("click",function(){openEditor(project,b.dataset.add,-1,b.dataset.stageKey||b.dataset.meetingIndex||b.dataset.registerKey||null)})});
+  document.querySelectorAll("[data-delete]").forEach(function(b){b.addEventListener("click",function(){deleteRecord(project,b.dataset.delete,Number(b.dataset.index),b.dataset.stageKey||b.dataset.meetingIndex||b.dataset.registerKey||null)})});
 }
 
 function openScope(id){
@@ -653,6 +845,7 @@ function bindProjectCards(){document.querySelectorAll("[data-project]").forEach(
 function bindCommon(){
   document.querySelectorAll("[data-go-gallery]").forEach(function(b){b.addEventListener("click",function(){currentView="gallery";currentProjectId=null;render()})});
   document.querySelectorAll("[data-go-schedule]").forEach(function(b){b.addEventListener("click",function(){currentView="schedule";currentProjectId=null;render()})});
+  document.querySelectorAll("[data-go-meetings]").forEach(function(b){b.addEventListener("click",function(){currentView="meetings";currentProjectId=null;render()})});
   document.querySelectorAll("[data-open-ai]").forEach(function(b){b.addEventListener("click",openAi)});
   bindProjectCards();
 }

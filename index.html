@@ -50,16 +50,18 @@
       </div>
       <nav class="main-nav" aria-label="Primary">
         <button class="nav-item active" data-view="dashboard"><i data-lucide="layout-dashboard"></i><span>Dashboard</span></button>
-        <button class="nav-item" data-view="gallery"><i data-lucide="panels-top-left"></i><span>Project Gallery</span></button>
+        <button class="nav-item" data-view="gallery"><i data-lucide="panels-top-left"></i><span>Projects</span></button>
         <button class="nav-item" data-view="schedule"><i data-lucide="gantt-chart-square"></i><span>Project Schedule</span></button>
-        <button class="nav-item" data-view="priority"><i data-lucide="flame"></i><span>High Priority</span><b id="priorityCount">0</b></button>
+        <button class="nav-item" data-view="meetings"><i data-lucide="calendar-clock"></i><span>Meetings</span></button>
+        <button class="nav-item admin-only" data-view="priority"><i data-lucide="flame"></i><span>High Priority</span><b id="priorityCount">0</b></button>
       </nav>
       <div class="sidebar-section-label">WORKSPACE</div>
       <nav class="main-nav" aria-label="Workspace">
+        <button class="nav-item admin-only" data-view="members"><i data-lucide="users"></i><span>Members</span></button>
         <button class="nav-item" id="openAiNav"><i data-lucide="sparkles"></i><span>AI Assistant</span></button>
-        <button class="nav-item" id="resetDemo"><i data-lucide="rotate-ccw"></i><span>Reset Demo Data</span></button>
+        <button class="nav-item admin-only" id="resetDemo"><i data-lucide="rotate-ccw"></i><span>Reset Demo Data</span></button>
       </nav>
-      <div class="sidebar-directory">
+      <div class="sidebar-directory admin-only">
         <div class="sidebar-section-label">PROJECT DIRECTORY</div>
         <nav class="main-nav" aria-label="Project directory">
           <button class="nav-item" data-view="clients"><i data-lucide="briefcase-business"></i><span>Clients</span></button>
@@ -68,7 +70,7 @@
         </nav>
       </div>
       <div class="sidebar-footer">
-        <div class="avatar" id="sidebarAvatar">HA</div>
+        <div class="avatar profile-avatar" id="sidebarAvatar"><img id="sidebarPhoto" alt="" hidden><span id="sidebarInitials">HA</span></div>
         <div><strong id="sidebarUserName">Hosis Admin</strong><small id="sidebarRole">Administrator</small></div>
         <button id="switchRole" class="icon-button subtle" title="Switch role" aria-label="Switch role"><i data-lucide="log-out"></i></button>
       </div>
