@@ -77,22 +77,15 @@ test('directory groups repeated companies, retains project-specific contacts and
   await expect(page.locator('.project-hero h1')).toHaveText('Harbourstone Residences');
 });
 
-test('assigned-user directory and tasks include only visible projects, including an empty contractor list', async ({ page }) => {
+test('assigned-user tasks include only assigned projects and admin directories are hidden', async ({ page }) => {
   await enter(page, 'sofia');
   await expect(page.locator('.open-task-list .dashboard-task')).toHaveCount(6);
   await expect(page.locator('.dashboard-tasks')).not.toContainText('Charles Studio Workplace');
-  await page.locator('[data-view="clients"]').click();
-  await expect(page.locator('.directory-card')).toHaveCount(3);
-  await expect(page.locator('#content')).not.toContainText('Northline Workplace Group');
-  await page.locator('[data-view="consultants"]').click();
-  await expect(page.locator('#content')).not.toContainText('Aeroform Mechanical Studio');
-  await page.locator('.directory-card').filter({ hasText: 'Signal North Engineering' }).getByRole('button', { name: 'View company & contacts' }).click();
-  await expect(page.locator('.project-card')).toHaveCount(2);
-  await expect(page.locator('[data-edit]')).toHaveCount(0);
-  await page.getByRole('button', { name: 'Back to Consultants' }).click();
-  await expect(page.locator('.directory-grid')).toBeVisible();
-  await page.locator('[data-view="contractors"]').click();
-  await expect(page.getByRole('heading', { name: 'No contractors yet' })).toBeVisible();
+  await expect(page.locator('[data-view="clients"]')).toBeHidden();
+  await expect(page.locator('[data-view="consultants"]')).toBeHidden();
+  await expect(page.locator('[data-view="contractors"]')).toBeHidden();
+  await expect(page.locator('[data-view="members"]')).toBeHidden();
+  await expect(page.locator('[data-view="gallery"] span')).toHaveText('My Projects');
 });
 
 test('company edits and deletions in project records are reflected in the directory without resetting data', async ({ page }) => {

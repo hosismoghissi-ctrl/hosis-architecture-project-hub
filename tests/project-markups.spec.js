@@ -26,11 +26,15 @@ test('each scoped stage has an editable checklist and progress excludes N/A', as
   await expect(page.locator('.workflow-count')).toHaveText('1/14 milestones complete');
   await expect(page.locator('.workflow-progress')).toHaveAttribute('aria-valuenow', '7');
   await expect(page.locator('[data-stage="design"] small')).toHaveText('7% complete');
-  for (const stage of ['survey', 'permit', 'tender', 'construction', 'closeout']) {
+  for (const stage of ['survey', 'permit', 'closeout']) {
     await page.locator(`[data-stage="${stage}"]`).click();
     await expect(page.locator('.milestone-status').first()).toBeVisible();
     await page.locator('.milestone-status').first().selectOption('In progress');
   }
+  await page.locator('[data-stage="tender"]').click();
+  await expect(page.locator('.bid-table')).toBeVisible();
+  await page.locator('[data-stage="construction"]').click();
+  await expect(page.locator('.register-card')).toHaveCount(12);
   await page.locator('[data-stage="design"]').click();
   await expect(first).toHaveValue('Complete');
   await page.getByRole('button', { name: 'Add custom milestone' }).click();
@@ -114,7 +118,7 @@ test('legacy administration and user edits survive migration and repeated reload
   await expect(page.locator('.workflow-row')).toHaveCount(16);
 });
 
-test('assigned user cannot edit milestones, contacts or project notes', async ({ page }) => {
+test('assigned user cannot edit milestones, registers, contacts or project notes', async ({ page }) => {
   await openProject(page, true);
   await expect(page.locator('[data-milestone-status], [data-add], [data-edit], [data-delete]')).toHaveCount(0);
   await expect(page.getByLabel('Project Notes', { exact: true })).toHaveAttribute('readonly', '');
