@@ -26,11 +26,14 @@ test('each scoped stage has an editable checklist and progress excludes N/A', as
   await expect(page.locator('.workflow-count')).toHaveText('1/14 milestones complete');
   await expect(page.locator('.workflow-progress')).toHaveAttribute('aria-valuenow', '7');
   await expect(page.locator('[data-stage="design"] small')).toHaveText('7% complete');
-  for (const stage of ['survey', 'permit', 'closeout']) {
+  for (const stage of ['survey', 'closeout']) {
     await page.locator(`[data-stage="${stage}"]`).click();
     await expect(page.locator('.milestone-status').first()).toBeVisible();
     await page.locator('.milestone-status').first().selectOption('In progress');
   }
+  await page.locator('[data-stage="permit"]').click();
+  await expect(page.locator('.permit-discipline')).toHaveCount(4);
+  await expect(page.locator('.permit-cycle')).toBeVisible();
   await page.locator('[data-stage="tender"]').click();
   await expect(page.locator('.bid-table')).toBeVisible();
   await page.locator('[data-stage="construction"]').click();
