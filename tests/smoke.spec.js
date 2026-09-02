@@ -12,7 +12,7 @@ test("admin can navigate projects, tasks, scope and assistant", async ({ page })
   await expect(page.getByRole("heading", { name: /Project intelligence/i })).toBeVisible();
 
   await page.getByRole("button", { name: /^Projects$/i }).click();
-  await expect(page.locator(".project-card")).toHaveCount(6);
+  await expect(page.locator(".project-card")).toHaveCount(12);
 
   await page.locator(".project-card").first().click();
   await expect(page.locator(".project-hero h1")).toHaveText("Charles Studio Workplace");
@@ -55,7 +55,7 @@ test("portfolio schedule shows projects and overlapping stage bars", async ({ pa
   await page.getByRole("button", { name: /Continue as Admin/i }).click();
   await page.getByRole("button", { name: /Project Schedule/i }).click();
   await expect(page.getByRole("heading", { name: "Project Schedule", exact: true })).toBeVisible();
-  await expect(page.locator(".timeline-row")).toHaveCount(6);
+  await expect(page.locator(".timeline-row")).toHaveCount(12);
   await expect(page.locator(".timeline-bar").first()).toBeVisible();
 });
 
@@ -64,7 +64,7 @@ test("assigned user sees only their projects", async ({ page }) => {
   await page.selectOption("#welcomeUser", "maya");
   await page.locator("#continueUser").click();
   await page.getByRole("button", { name: /My Projects/i }).click();
-  await expect(page.locator(".project-card")).toHaveCount(3);
+  await expect(page.locator(".project-card")).toHaveCount(5);
   await expect(page.getByRole("button", { name: /Reset Demo Data/i })).toBeHidden();
   await expect(page.getByRole("button", { name: /Members/i })).toBeHidden();
   await expect(page.getByRole("button", { name: /Edit Scope/i })).toHaveCount(0);

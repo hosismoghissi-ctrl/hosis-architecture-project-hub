@@ -34,6 +34,11 @@
             <option value="maya">Maya Chen</option>
             <option value="liam">Liam Brooks</option>
             <option value="sofia">Sofia Martinez</option>
+            <option value="noah">Noah Williams</option>
+            <option value="amina">Amina Yusuf</option>
+            <option value="ethan">Ethan Park</option>
+            <option value="chloe">Chloe Martin</option>
+            <option value="daniel">Daniel Rossi</option>
           </select>
           <button id="continueUser" class="icon-button" aria-label="Continue as selected user"><i data-lucide="arrow-right"></i></button>
         </div>
@@ -49,15 +54,16 @@
         <span><strong>HOSIS</strong><small>ARCHITECTURE</small></span>
       </div>
       <nav class="main-nav" aria-label="Primary">
-        <button class="nav-item active" data-view="dashboard"><i data-lucide="layout-dashboard"></i><span>Dashboard</span></button>
-        <button class="nav-item" data-view="gallery"><i data-lucide="panels-top-left"></i><span>Projects</span></button>
-        <button class="nav-item" data-view="schedule"><i data-lucide="gantt-chart-square"></i><span>Project Schedule</span></button>
-        <button class="nav-item" data-view="meetings"><i data-lucide="calendar-clock"></i><span>Meetings</span></button>
-        <button class="nav-item admin-only" data-view="priority"><i data-lucide="flame"></i><span>High Priority</span><b id="priorityCount">0</b></button>
+        <button class="nav-item active" data-view="dashboard" data-menu-key="dashboard"><i data-lucide="layout-dashboard"></i><span>Dashboard</span></button>
+        <button class="nav-item" data-view="gallery" data-menu-key="gallery"><i data-lucide="panels-top-left"></i><span>Projects</span></button>
+        <button class="nav-item" data-view="schedule" data-menu-key="schedule"><i data-lucide="gantt-chart-square"></i><span>Project Schedule</span></button>
+        <button class="nav-item" data-view="meetings" data-menu-key="meetings"><i data-lucide="calendar-clock"></i><span>Meetings</span></button>
+        <button class="nav-item admin-only" data-view="priority" data-menu-key="priority"><i data-lucide="flame"></i><span>High Priority</span><b id="priorityCount">0</b></button>
       </nav>
       <div class="sidebar-section-label">WORKSPACE</div>
       <nav class="main-nav" aria-label="Workspace">
         <button class="nav-item admin-only" data-view="members"><i data-lucide="users"></i><span>Members</span></button>
+        <button class="nav-item admin-only" data-view="settings"><i data-lucide="panel-top"></i><span>Header &amp; Branding</span></button>
         <button class="nav-item" id="openAiNav"><i data-lucide="sparkles"></i><span>AI Assistant</span></button>
         <button class="nav-item admin-only" id="resetDemo"><i data-lucide="rotate-ccw"></i><span>Reset Demo Data</span></button>
       </nav>
