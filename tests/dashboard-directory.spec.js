@@ -20,7 +20,7 @@ test('dashboard puts prioritized project tasks before Project Schedule and prese
     return !!(task.compareDocumentPosition(el.querySelector('.dashboard-schedule')) & Node.DOCUMENT_POSITION_FOLLOWING);
   });
   expect(ordering).toBe(true);
-  await expect(page.locator('.open-task-list .dashboard-task')).toHaveCount(12);
+  await expect(page.locator('.open-task-list .dashboard-task')).toHaveCount(25);
   const priorities = await page.locator('.open-task-list .dashboard-task').evaluateAll(rows => rows.map(r => r.dataset.priority));
   expect(priorities).toEqual([...priorities].sort((a, b) => ['High', 'Medium', 'Low'].indexOf(a) - ['High', 'Medium', 'Low'].indexOf(b)));
   await expect(page.locator('.open-task-list .dashboard-task').first()).toContainText('Close mechanical ceiling comments');
@@ -59,19 +59,19 @@ test('directory groups repeated companies, retains project-specific contacts and
     await expect(page.locator('.directory-card').first()).toBeVisible();
     await expect(page.locator(`[data-view="${type}"]`)).toHaveClass(/active/);
   }
-  await expect(page.locator('.directory-card')).toHaveCount(3);
+  await expect(page.locator('.directory-card')).toHaveCount(4);
   await expect(page.getByText('To Be Determined', { exact: true })).toHaveCount(0);
   await page.locator('[data-view="consultants"]').click();
   const firm = page.locator('.directory-card').filter({ hasText: 'Aeroform Mechanical Studio' });
   await expect(firm).toHaveCount(1);
-  await expect(firm.locator('[data-project]')).toHaveCount(2);
+  await expect(firm.locator('[data-project]')).toHaveCount(3);
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.screenshot({ path: 'test-results/consultants-directory.png', fullPage: true });
   await firm.getByRole('button', { name: 'View company & contacts' }).click();
   await expect(page.locator('.company-profile-header h2')).toHaveText('Aeroform Mechanical Studio');
   await expect(page.getByRole('link', { name: 'workplace@example.com' })).toHaveAttribute('href', 'mailto:workplace%40example.com');
   await expect(page.getByRole('link', { name: 'residences@example.com' })).toBeVisible();
-  await expect(page.locator('.project-card')).toHaveCount(2);
+  await expect(page.locator('.project-card')).toHaveCount(3);
   await page.screenshot({ path: 'test-results/company-profile.png', fullPage: true });
   await page.locator('.project-card[data-project="hap-2605"]').click();
   await expect(page.locator('.project-hero h1')).toHaveText('Harbourstone Residences');
@@ -79,7 +79,7 @@ test('directory groups repeated companies, retains project-specific contacts and
 
 test('assigned-user tasks include only assigned projects and admin directories are hidden', async ({ page }) => {
   await enter(page, 'sofia');
-  await expect(page.locator('.open-task-list .dashboard-task')).toHaveCount(6);
+  await expect(page.locator('.open-task-list .dashboard-task')).toHaveCount(10);
   await expect(page.locator('.dashboard-tasks')).not.toContainText('Charles Studio Workplace');
   await expect(page.locator('[data-view="clients"]')).toBeHidden();
   await expect(page.locator('[data-view="consultants"]')).toBeHidden();
@@ -105,7 +105,7 @@ test('company edits and deletions in project records are reflected in the direct
   page.once('dialog', dialog => dialog.accept());
   await page.locator('.company-card').filter({ hasText: 'Northline Workplace Group' }).locator('[data-delete]').click();
   await page.locator('[data-view="clients"]').click();
-  await expect(page.locator('.directory-card')).toHaveCount(5);
+  await expect(page.locator('.directory-card')).toHaveCount(11);
   await expect(page.locator('#content')).not.toContainText('Northline Workplace Group');
 });
 
@@ -115,7 +115,7 @@ test('dashboard and bottom directory navigation work on mobile without horizonta
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.getByRole('button', { name: 'Toggle menu' }).click();
   await page.locator('[data-view="clients"]').click();
-  await expect(page.locator('.directory-card')).toHaveCount(6);
+  await expect(page.locator('.directory-card')).toHaveCount(12);
   await expect(page.locator('#sidebar')).not.toHaveClass(/open/);
   await page.locator('.directory-card').first().locator('[data-company]').click();
   await expect(page.locator('.company-profile-header')).toBeVisible();
