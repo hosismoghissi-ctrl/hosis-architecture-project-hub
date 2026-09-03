@@ -2,7 +2,7 @@ const { test, expect } = require("@playwright/test");
 
 async function skipIntro(page) {
   await page.goto("http://127.0.0.1:4173", { waitUntil: "domcontentloaded" });
-  await page.getByRole("button", { name: /Skip Intro/i }).click();
+  await page.getByRole("button", { name: /Enter Workspace/i }).click();
   await expect(page.getByRole("heading", { name: /Architecture in motion.*Projects under control/i })).toBeVisible();
 }
 
