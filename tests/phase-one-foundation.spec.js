@@ -33,7 +33,7 @@ test('admin and member navigation are rendered from separate role definitions', 
 test('admin settings keep company and personal headers in separate data models', async ({ page }) => {
   await enterAdmin(page);
   await page.locator('[data-view="settings"]').click();
-  await expect(page.getByRole('heading', { name: 'Admin Settings', exact: true })).toBeVisible();
+  await expect(page.locator('#content').getByRole('heading', { name: 'Admin Settings', exact: true })).toBeVisible();
   await expect(page.locator('#companySettings')).toBeVisible();
   await expect(page.locator('#memberSettings')).toBeVisible();
   await expect(page.locator('#logoSettings')).toBeVisible();

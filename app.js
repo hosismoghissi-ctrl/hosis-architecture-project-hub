@@ -580,7 +580,7 @@ function launch(role,userId){
   state.role=role;state.userId=role==="admin"?null:userId;saveState();
   document.getElementById("intro").classList.add("hidden");document.dispatchEvent(new Event("hosis:intro:closed"));document.getElementById("app").classList.remove("hidden");
   adminMemberFilter=null;
-  var user=role==="admin"?{name:state.workspace.companyHeader.name+" Admin",role:"Administrator",initials:"HA",photo:""}:USERS[userId];
+  var user=role==="admin"?{name:"Hosis Admin",role:"Administrator",initials:"HA",photo:""}:USERS[userId];
   applyRoleNavigation(user);
   currentView="dashboard";render();
 }
@@ -963,7 +963,7 @@ function editorConfig(project,kind,index,stageKey){
   var creating=index<0,item;
   if(kind==="settings")return {title:"Edit Company Header & Branding",description:"Admin-only company identity. Member personal headers are stored separately.",fields:[
     {name:"name",label:"Company Name",value:state.workspace.companyHeader.name},{name:"logo",label:"Company Logo URL",type:"url",value:state.workspace.companyHeader.logo,required:false},{name:"welcome",label:"Company Welcome Text",value:state.workspace.companyHeader.welcome,wide:true},{name:"summary",label:"Dashboard Header Summary",type:"textarea",value:state.workspace.companyHeader.summary,wide:true},{name:"banner",label:"Dashboard Banner Image URL",type:"url",value:state.workspace.companyHeader.banner,wide:true},{name:"accent",label:"Brand Accent",type:"color",value:state.workspace.companyHeader.accent}
-  ],validate:function(v){return (!v.logo||/^https:\/\/\S+$/i.test(v.logo))&&/^https:\/\/\S+$/i.test(v.banner)?"":"Use secure HTTPS image URLs for the logo and banner.";},save:function(v){Object.assign(state.workspace.companyHeader,v);state.settings.organization=v.name;state.settings.dashboardHeading=v.welcome;state.settings.dashboardSummary=v.summary;state.settings.dashboardImage=v.banner;applyWorkspaceSettings();document.getElementById("sidebarUserName").textContent=v.name+" Admin";renderRoleNavigation();}};
+  ],validate:function(v){return (!v.logo||/^https:\/\/\S+$/i.test(v.logo))&&/^https:\/\/\S+$/i.test(v.banner)?"":"Use secure HTTPS image URLs for the logo and banner.";},save:function(v){Object.assign(state.workspace.companyHeader,v);state.settings.organization=v.name;state.settings.dashboardHeading=v.welcome;state.settings.dashboardSummary=v.summary;state.settings.dashboardImage=v.banner;applyWorkspaceSettings();renderRoleNavigation();}};
   if(kind==="memberProfile"){
     item=USERS[stageKey];if(!item)return null;
     return {title:"Edit "+item.name,description:"Admin can manage this member’s identity and personal header without changing company branding.",fields:[{name:"name",label:"Display Name",value:item.name},{name:"role",label:"Job Title",value:item.role},{name:"email",label:"Email",type:"email",value:item.email},{name:"photo",label:"Profile Image URL",type:"url",value:item.photo,wide:true},{name:"banner",label:"Personal Header Image URL",type:"url",value:item.banner,wide:true},{name:"welcome",label:"Personal Welcome Text",type:"textarea",value:item.welcome,wide:true}],validate:function(v){return /^https:\/\/\S+$/i.test(v.photo)&&/^https:\/\/\S+$/i.test(v.banner)?"":"Use secure HTTPS image URLs for the profile and banner.";},save:function(v){Object.assign(item,v);item.initials=initials(item.name);}};
