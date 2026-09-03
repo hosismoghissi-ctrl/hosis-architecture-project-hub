@@ -29,7 +29,7 @@ test("admin can navigate projects, tasks, scope and assistant", async ({ page })
 });
 
 test("admin can edit records and schedule dates", async ({ page }) => {
-  await skipIntro(page);
+  await openEntry(page);
   await page.getByRole("button", { name: /Continue as Admin/i }).click();
   await page.getByRole("button", { name: /^Projects$/i }).click();
   await page.locator(".project-card").first().click();
@@ -50,7 +50,7 @@ test("admin can edit records and schedule dates", async ({ page }) => {
 });
 
 test("portfolio schedule shows projects and overlapping stage bars", async ({ page }) => {
-  await skipIntro(page);
+  await openEntry(page);
   await page.getByRole("button", { name: /Continue as Admin/i }).click();
   await page.getByRole("button", { name: /^Schedule$/i }).click();
   await expect(page.getByRole("heading", { name: "Project Schedule", exact: true })).toBeVisible();
@@ -59,7 +59,7 @@ test("portfolio schedule shows projects and overlapping stage bars", async ({ pa
 });
 
 test("assigned user sees only their projects", async ({ page }) => {
-  await skipIntro(page);
+  await openEntry(page);
   await page.selectOption("#welcomeUser", "maya");
   await page.locator("#continueUser").click();
   await page.getByRole("button", { name: /My Projects/i }).click();
@@ -72,7 +72,7 @@ test("assigned user sees only their projects", async ({ page }) => {
 
 test("mobile layout does not overflow", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await skipIntro(page);
+  await openEntry(page);
   await page.getByRole("button", { name: /Continue as Admin/i }).click();
   const sizes = await page.evaluate(() => ({ scroll: document.documentElement.scrollWidth, client: document.documentElement.clientWidth }));
   expect(sizes.scroll).toBeLessThanOrEqual(sizes.client + 1);
