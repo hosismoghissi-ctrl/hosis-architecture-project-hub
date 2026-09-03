@@ -28,6 +28,7 @@ function IntroHost() {
 
     if (stage === 'login') {
       window.requestAnimationFrame(() => {
+        document.getElementById('welcomeTitle')?.focus({ preventScroll: true });
         document.dispatchEvent(new Event('hosis:intro:enter'));
       });
     }
