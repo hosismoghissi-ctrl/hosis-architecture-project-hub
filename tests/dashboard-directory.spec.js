@@ -3,7 +3,6 @@ const site = 'http://127.0.0.1:4173';
 const key = 'hosisHubPrototypeV1';
 async function enter(page, user) {
   await page.goto(site, { waitUntil: 'domcontentloaded' });
-  await page.getByRole('button', { name: 'ENTER WORKSPACE' }).click();
   if (user) {
     await page.locator('#welcomeUser').selectOption(user);
     await page.locator('#continueUser').click();

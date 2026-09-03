@@ -5,13 +5,11 @@ const storageKey = 'hosisHubPrototypeV1';
 
 async function enterAdmin(page) {
   await page.goto(site, { waitUntil: 'domcontentloaded' });
-  await page.getByRole('button', { name: 'ENTER WORKSPACE' }).click();
   await page.getByRole('button', { name: 'Continue as Admin' }).click();
 }
 
 async function enterMember(page, id = 'maya') {
   await page.goto(site, { waitUntil: 'domcontentloaded' });
-  await page.getByRole('button', { name: 'ENTER WORKSPACE' }).click();
   await page.locator('#welcomeUser').selectOption(id);
   await page.locator('#continueUser').click();
 }

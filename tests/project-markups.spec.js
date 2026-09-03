@@ -5,7 +5,6 @@ const key = 'hosisHubPrototypeV1';
 async function openProject(page, user = false) {
   await page.addInitScript(() => sessionStorage.setItem('hosis-video-annotated-seen-v1', '1'));
   await page.goto(site, { waitUntil: 'domcontentloaded' });
-  await page.getByRole('button', { name: 'ENTER WORKSPACE' }).click();
   if (user) await page.locator('#continueUser').click();
   else await page.getByRole('button', { name: 'Continue as Admin' }).click();
   await page.locator('[data-view="gallery"]').click();

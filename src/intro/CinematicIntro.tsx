@@ -1,13 +1,8 @@
 import { type CSSProperties, type PointerEvent as ReactPointerEvent, useEffect, useRef, useState } from 'react';
-import { ArrowUpRight, Box } from 'lucide-react';
+import { Box } from 'lucide-react';
 import { INTRO } from './videoConfig';
 
-type CinematicIntroProps = {
-  leaving?: boolean;
-  onEnter: () => void;
-};
-
-export function CinematicIntro({ leaving = false, onEnter }: CinematicIntroProps) {
+export function CinematicIntro() {
   const surface = useRef<HTMLElement>(null);
   const frame = useRef<number>();
   const [reducedMotion, setReducedMotion] = useState(() => window.matchMedia('(prefers-reduced-motion: reduce)').matches);
@@ -44,7 +39,7 @@ export function CinematicIntro({ leaving = false, onEnter }: CinematicIntroProps
   return (
     <section
       ref={surface}
-      className={`cinematic cinematic-architectural-intro${leaving ? ' is-leaving' : ''}`}
+      className="cinematic cinematic-architectural-intro"
       style={initialReveal}
       aria-label="Hosis Architecture introduction"
       onPointerMove={moveReveal}
@@ -70,10 +65,6 @@ export function CinematicIntro({ leaving = false, onEnter }: CinematicIntroProps
         <p className="cinematic-kicker">{INTRO.secondaryTitle}</p>
         <h1>{INTRO.title}<span>{INTRO.titleAccent}</span></h1>
         <p className="cinematic-supporting">{INTRO.supportingText}</p>
-        <button className="cinematic-enter" type="button" onClick={onEnter}>
-          <span>{INTRO.cta}</span>
-          <ArrowUpRight size={18} aria-hidden="true" />
-        </button>
       </div>
 
       <footer className="cinematic-footerline">
