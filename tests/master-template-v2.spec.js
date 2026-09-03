@@ -20,21 +20,21 @@ async function openProject(page, id = 'hap-2601') {
 
 test('admin can open a member workspace and members receive a different menu', async ({ page }) => {
   await enter(page);
-  await expect(page.locator('.member-card')).toHaveCount(8);
+  await expect(page.locator('.team-overview-row')).toHaveCount(8);
   await page.locator('[data-member-filter="maya"]').first().click();
   await expect(page.locator('.page-heading h1')).toContainText('Maya Chen');
   await expect(page.locator('.dashboard-projects .project-card')).toHaveCount(5);
   await expect(page.locator('.open-task-list .dashboard-task')).toHaveCount(11);
   await page.locator('[data-view="members"]').click();
-  await expect(page.locator('.member-profile-card')).toHaveCount(8);
+  await expect(page.locator('.members-table-row')).toHaveCount(8);
 
   await page.getByLabel('Switch role').click();
   await page.locator('#welcomeUser').selectOption('liam');
   await page.locator('#continueUser').click();
   await expect(page.locator('[data-view="gallery"] span')).toHaveText('My Projects');
-  await expect(page.locator('[data-view="schedule"] span')).toHaveText('My Schedule');
-  await expect(page.locator('[data-view="meetings"] span')).toHaveText('My Meetings');
-  await expect(page.locator('[data-view="members"]')).toBeHidden();
+  await expect(page.locator('[data-view="schedule"] span')).toHaveText('Schedule');
+  await expect(page.locator('[data-view="meetings"] span')).toHaveText('Meetings');
+  await expect(page.locator('[data-view="members"]')).toHaveCount(0);
   await expect(page.locator('.dashboard-projects .project-card')).toHaveCount(4);
 });
 

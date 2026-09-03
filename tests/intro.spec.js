@@ -67,6 +67,20 @@ test('reduced motion uses only the matching poster and still allows direct entry
   expect(requests).toHaveLength(0);
 });
 
+test('completed intro uses the supplied sketch-to-render architectural reveal', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.goto(site);
+  const reveal = page.locator('.architectural-reveal');
+  await expect(reveal).toHaveClass(/is-visible/);
+  await expect(page.locator('.architectural-sketch')).toHaveAttribute('src', /assets\/hosis-intro-sketch\.jpg$/);
+  await expect(page.locator('.architectural-render')).toHaveAttribute('src', /assets\/hosis-intro-render\.jpg$/);
+  const before = await reveal.evaluate(element => element.style.getPropertyValue('--reveal-x'));
+  await page.mouse.move(540, 360);
+  const after = await reveal.evaluate(element => element.style.getPropertyValue('--reveal-x'));
+  expect(after).not.toBe(before);
+  await expect(page.getByRole('button', { name: 'Continue as Admin' })).toBeVisible();
+});
+
 test('failed media and blocked autoplay never block selecting a role', async ({ page }) => {
   await page.route('**/hosis-intro-annotated.mp4', route => route.abort());
   await page.goto(site);

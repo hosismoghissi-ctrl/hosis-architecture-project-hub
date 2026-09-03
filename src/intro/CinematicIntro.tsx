@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { type CSSProperties, type PointerEvent as ReactPointerEvent, useEffect, useRef, useState } from 'react';
 import { ArrowUpRight, Box, Pause, Play, RotateCcw } from 'lucide-react';
 import { INTRO } from './videoConfig';
 
@@ -11,6 +11,7 @@ export function CinematicIntro() {
   const [fallback, setFallback] = useState('');
   const [replay, setReplay] = useState(0);
   const [progress, setProgress] = useState(0);
+  const [revealPoint, setRevealPoint] = useState({ x: 30, y: 52 });
 
   useEffect(() => {
     const preference = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -67,8 +68,20 @@ export function CinematicIntro() {
     video.current?.pause();
     setFallback('The video could not load. You can still enter the hub.'); setFinished(true);
   }
+  function moveReveal(event: ReactPointerEvent<HTMLElement>) {
+    if (!finished) return;
+    const bounds = event.currentTarget.getBoundingClientRect();
+    setRevealPoint({
+      x: Math.max(0, Math.min(100, ((event.clientX - bounds.left) / bounds.width) * 100)),
+      y: Math.max(0, Math.min(100, ((event.clientY - bounds.top) / bounds.height) * 100)),
+    });
+  }
+  const revealStyle = {
+    '--reveal-x': `${revealPoint.x}%`,
+    '--reveal-y': `${revealPoint.y}%`,
+  } as CSSProperties;
 
-  return <section className={`cinematic cinematic-video-intro ${finished ? 'has-arrived' : ''}`} aria-label="Hosis cinematic introduction">
+  return <section className={`cinematic cinematic-video-intro ${finished ? 'has-arrived' : ''}`} aria-label="Hosis cinematic introduction" onPointerMove={moveReveal}>
     <img className="cinematic-video-poster" src={INTRO.poster} alt="" />
     {!reduced && <video key={replay} ref={video} className="cinematic-video" src={INTRO.video} poster={INTRO.poster}
       muted playsInline preload="auto" aria-label="Annotated architectural introduction"
@@ -76,6 +89,11 @@ export function CinematicIntro() {
       onPlay={() => setPaused(false)} onPause={() => setPaused(true)}
       onTimeUpdate={event => { const media = event.currentTarget; if (media.duration) setProgress(media.currentTime / media.duration); }}
       onEnded={() => { setProgress(1); setFinished(true); }} />}
+    <div className={`architectural-reveal ${finished ? 'is-visible' : ''}`} style={revealStyle} aria-hidden="true">
+      <img className="architectural-sketch" src={INTRO.sketch} alt="" />
+      <span className="architectural-render-mask"><img className="architectural-render" src={INTRO.render} alt="" /></span>
+      <span className="architectural-reveal-caption"><b>SKETCH TO DELIVERY</b><small>Move across the drawing to reveal the built vision.</small></span>
+    </div>
     <div className="cinematic-shade" aria-hidden="true" />
     <header className="cinematic-header flex items-center justify-between">
       <div className="cinematic-logo flex items-center gap-3"><Box size={31} strokeWidth={1.25} aria-hidden="true" /><span>HOSIS<small>ARCHITECTURE</small></span></div>

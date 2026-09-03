@@ -81,10 +81,10 @@ test('assigned-user tasks include only assigned projects and admin directories a
   await enter(page, 'sofia');
   await expect(page.locator('.open-task-list .dashboard-task')).toHaveCount(10);
   await expect(page.locator('.dashboard-tasks')).not.toContainText('Charles Studio Workplace');
-  await expect(page.locator('[data-view="clients"]')).toBeHidden();
-  await expect(page.locator('[data-view="consultants"]')).toBeHidden();
-  await expect(page.locator('[data-view="contractors"]')).toBeHidden();
-  await expect(page.locator('[data-view="members"]')).toBeHidden();
+  await expect(page.locator('[data-view="clients"]')).toHaveCount(0);
+  await expect(page.locator('[data-view="consultants"]')).toHaveCount(0);
+  await expect(page.locator('[data-view="contractors"]')).toHaveCount(0);
+  await expect(page.locator('[data-view="members"]')).toHaveCount(0);
   await expect(page.locator('[data-view="gallery"] span')).toHaveText('My Projects');
 });
 

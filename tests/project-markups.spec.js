@@ -60,7 +60,8 @@ test('each scoped stage has an editable checklist and progress excludes N/A', as
 test('project notes, team contacts and company records persist with safe logo handling', async ({ page }) => {
   await openProject(page);
   await expect(page.locator('aside.detail-stack .panel h3')).toHaveText(['Project Notes', 'Project Tasks']);
-  await expect(page.locator('.project-layout').getByRole('heading', { name: /^(Documents|Upcoming Deadlines|Recent Activity)$/ })).toHaveCount(0);
+  await expect(page.locator('.project-layout').getByRole('heading', { name: 'Documents', exact: true })).toBeVisible();
+  await expect(page.locator('.project-layout').getByRole('heading', { name: 'Activity', exact: true })).toBeVisible();
   await page.getByLabel('Project Notes', { exact: true }).fill('Keep survey access notes here.');
   // Save on input, without relying on blur before navigation or reload.
   expect(await page.evaluate(k => JSON.parse(localStorage.getItem(k)).projects[0].notes, key)).toBe('Keep survey access notes here.');
@@ -123,7 +124,8 @@ test('legacy administration and user edits survive migration and repeated reload
 
 test('assigned user cannot edit milestones, registers, contacts or project notes', async ({ page }) => {
   await openProject(page, true);
-  await expect(page.locator('[data-milestone-status], [data-add], [data-edit], [data-delete]')).toHaveCount(0);
+  await expect(page.locator('[data-milestone-status], [data-add]:not([data-add="expenses"]), [data-edit], [data-delete]')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Add expense', exact: true })).toBeVisible();
   await expect(page.getByLabel('Project Notes', { exact: true })).toHaveAttribute('readonly', '');
   await expect(page.locator('.milestone-status.read-only')).toHaveCount(15);
 });

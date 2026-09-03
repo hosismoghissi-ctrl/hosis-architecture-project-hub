@@ -11,8 +11,20 @@
 #introRoot button { cursor: pointer; transition: background .2s; }
 #introRoot button:focus-visible { outline: 2px solid #9adff9; outline-offset: 4px; }
 #introRoot button:disabled { cursor: default; opacity: .5; }
-#introRoot .cinematic-video, #introRoot .cinematic-video-poster { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
-#introRoot .cinematic-shade { position: absolute; inset: 0; pointer-events: none; background: linear-gradient(90deg, transparent 30%, rgba(5,16,25,.12) 55%, rgba(5,16,25,.6)),linear-gradient(0deg,rgba(5,16,25,.4),transparent 20%); }
+#introRoot .cinematic-video, #introRoot .cinematic-video-poster { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; transition: opacity .7s ease; }
+#introRoot .architectural-reveal { --reveal-x: 30%; --reveal-y: 52%; position: absolute; inset: 0; z-index: 1; overflow: hidden; pointer-events: none; opacity: 0; background: #ebe5da; transition: opacity .85s ease; }
+#introRoot .architectural-reveal.is-visible { opacity: 1; }
+#introRoot .architectural-sketch, #introRoot .architectural-render, #introRoot .architectural-render-mask { position: absolute; inset: 0; width: 100%; height: 100%; }
+#introRoot .architectural-sketch, #introRoot .architectural-render { object-fit: cover; object-position: center; }
+#introRoot .architectural-sketch { filter: grayscale(1) contrast(1.04) brightness(.92); }
+#introRoot .architectural-render-mask { display: block; -webkit-mask-image: radial-gradient(circle 260px at var(--reveal-x) var(--reveal-y),#fff 0 52%,rgba(255,255,255,.72) 68%,transparent 100%); mask-image: radial-gradient(circle 260px at var(--reveal-x) var(--reveal-y),#fff 0 52%,rgba(255,255,255,.72) 68%,transparent 100%); }
+#introRoot .architectural-render { filter: saturate(.88) contrast(1.02); }
+#introRoot .architectural-reveal:after { content:""; position:absolute; inset:0; background:radial-gradient(ellipse at center,transparent 45%,rgba(8,17,24,.22)),linear-gradient(90deg,rgba(8,17,24,.13),transparent 44%,rgba(8,17,24,.18)); }
+#introRoot .architectural-reveal-caption { position:absolute; left:4vw; bottom:112px; z-index:2; display:grid; gap:5px; padding:10px 12px; border-left:2px solid rgba(16,28,36,.52); color:#15242f; background:rgba(238,232,221,.68); backdrop-filter:blur(8px); }
+#introRoot .architectural-reveal-caption b { font-size:9px; letter-spacing:.16em; }
+#introRoot .architectural-reveal-caption small { font-size:10px; color:#485967; }
+#introRoot .has-arrived .cinematic-video, #introRoot .has-arrived .cinematic-video-poster { opacity: 0; }
+#introRoot .cinematic-shade { position: absolute; inset: 0; z-index: 2; pointer-events: none; background: linear-gradient(90deg, transparent 30%, rgba(5,16,25,.12) 55%, rgba(5,16,25,.6)),linear-gradient(0deg,rgba(5,16,25,.4),transparent 20%); }
 #introRoot .cinematic-header { position: absolute; top: 0; left: 0; right: 0; padding: max(24px,env(safe-area-inset-top)) 4vw 0; z-index: 4; }
 #introRoot .cinematic-logo { padding: 12px 16px; border-radius: 6px; background: #101c24ed; }
 #introRoot .cinematic-logo > span { font-size: 20px; font-weight: 600; letter-spacing: .2em; line-height: 1; }
@@ -57,6 +69,9 @@
   #introRoot .cinematic-logo > span { font-size: 16px; }
   #introRoot .cinematic-logo > svg { width: 24px; }
   #introRoot .cinematic-video, #introRoot .cinematic-video-poster { top: 80px; height: 56.25vw; }
+  #introRoot .architectural-reveal { top:80px; height:56.25vw; bottom:auto; }
+  #introRoot .architectural-render-mask { -webkit-mask-image:radial-gradient(circle 120px at var(--reveal-x) var(--reveal-y),#fff 0 55%,transparent 100%); mask-image:radial-gradient(circle 120px at var(--reveal-x) var(--reveal-y),#fff 0 55%,transparent 100%); }
+  #introRoot .architectural-reveal-caption { display:none; }
   #introRoot .cinematic-shade { background: linear-gradient(0deg,#101c24 22%,transparent 75%); }
   .entry-welcome { grid-template-columns: minmax(0,1fr); align-items: start; padding: calc(80px + 45vw) 16px 105px; }
   .entry-panel { grid-column: 1; padding: 22px; max-width: 470px; width: 100%; margin: 0 auto; }
