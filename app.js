@@ -937,7 +937,7 @@ function sectionIsOpen(project,key){
 }
 function projectAccordion(project,key,title,subtitle,iconName,body,action){
   var open=sectionIsOpen(project,key),panelId="project-section-"+project.id+"-"+key;
-  return '<section class="panel project-accordion'+(open?' open':'')+'" data-project-section="'+key+'"><div class="project-section-head"><button class="project-section-toggle" data-toggle-project-section="'+key+'" aria-expanded="'+open+'" aria-controls="'+panelId+'"><span class="project-section-icon">'+icon(iconName)+'</span><span><strong>'+esc(title)+'</strong>'+(subtitle?'<small>'+esc(subtitle)+'</small>':'')+'</span>'+icon("chevron-down")+'</button>'+(action||'')+'</div><div class="project-section-body" id="'+panelId+'"'+(open?'':' hidden')+'>'+body+'</div></section>';
+  return '<section class="panel project-accordion'+(open?' open':'')+'" data-project-section="'+key+'"><div class="project-section-head"><button class="project-section-toggle" data-toggle-project-section="'+key+'" aria-expanded="'+open+'" aria-controls="'+panelId+'"><span class="project-section-icon">'+icon(iconName)+'</span><span><h3>'+esc(title)+'</h3>'+(subtitle?'<small>'+esc(subtitle)+'</small>':'')+'</span>'+icon("chevron-down")+'</button>'+(action||'')+'</div><div class="project-section-body" id="'+panelId+'"'+(open?'':' hidden')+'>'+body+'</div></section>';
 }
 function renderProject(id){
   var p=projectById(id);

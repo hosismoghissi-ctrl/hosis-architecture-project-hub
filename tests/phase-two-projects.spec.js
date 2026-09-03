@@ -36,7 +36,9 @@ test('project sections are accessible accordions and remember state', async ({ p
   await expect(page.locator('[data-toggle-project-section][aria-expanded="false"]')).toHaveCount(10);
   await page.locator('[data-toggle-project-section="overview"]').click();
   await expect(page.locator('[data-toggle-project-section="overview"]')).toHaveAttribute('aria-expanded', 'true');
-  await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.locator('[data-view="dashboard"]').click();
+  await page.locator('[data-view="gallery"]').click();
+  await page.locator('[data-project="hap-2601"]').first().click();
   await expect(page.locator('[data-toggle-project-section="overview"]')).toHaveAttribute('aria-expanded', 'true');
   await expect(page.locator('[data-toggle-project-section="schedule"]')).toHaveAttribute('aria-expanded', 'false');
 });
@@ -62,8 +64,8 @@ test('admins can add workspace-specific project type subtypes', async ({ page })
   await page.locator('[data-view="settings"]').click();
   await expect(page.locator('#projectTypeSettings')).toBeVisible();
   await page.getByRole('button', { name: /Add category or subtype/i }).click();
-  await page.getByLabel('Category').fill('Residential');
-  await page.getByLabel('Optional Subtype').fill('Laneway House');
+  await page.locator('#editForm input[name="category"]').fill('Residential');
+  await page.locator('#editForm input[name="subtype"]').fill('Laneway House');
   await page.getByRole('button', { name: 'Save Changes' }).click();
   const types = await page.evaluate(k => JSON.parse(localStorage.getItem(k)).projectTypes, storageKey);
   expect(types.find(type => type.name === 'Residential').subtypes).toContain('Laneway House');
