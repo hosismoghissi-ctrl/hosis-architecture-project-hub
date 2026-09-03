@@ -31,9 +31,9 @@ test('project sections are accessible accordions and remember state', async ({ p
   await enterAdmin(page);
   await page.locator('[data-view="gallery"]').click();
   await page.locator('[data-project="hap-2601"]').first().click();
-  await expect(page.locator('[data-project-section]')).toHaveCount(10);
+  await expect(page.locator('[data-project-section]')).toHaveCount(11);
   await page.getByRole('button', { name: /Collapse All/i }).click();
-  await expect(page.locator('[data-toggle-project-section][aria-expanded="false"]')).toHaveCount(10);
+  await expect(page.locator('[data-toggle-project-section][aria-expanded="false"]')).toHaveCount(11);
   await page.locator('[data-toggle-project-section="overview"]').click();
   await expect(page.locator('[data-toggle-project-section="overview"]')).toHaveAttribute('aria-expanded', 'true');
   await page.locator('[data-view="dashboard"]').click();

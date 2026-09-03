@@ -91,13 +91,13 @@ test('projects preserve multiple assigned members and member access is scoped', 
   await expect(page.getByRole('button', { name: /Edit my images/i })).toBeVisible();
 });
 
-test('team overview and Phase 2 finance placeholders preserve the Phase 1 boundary', async ({ page }) => {
+test('team overview remains available beside the workspace accounting foundation', async ({ page }) => {
   await enterAdmin(page);
   await expect(page.locator('.team-overview-row')).toHaveCount(8);
   await expect(page.locator('.team-overview-head')).toContainText('Active Projects');
   await expect(page.locator('.team-overview-head')).toContainText('Open Tasks');
   await expect(page.locator('.team-overview-head')).toContainText('Overdue Tasks');
   await page.locator('[data-view="accounting"]').click();
-  await expect(page.locator('.deferred-module')).toContainText('PHASE 2');
-  await expect(page.locator('.deferred-module')).toContainText('No placeholder financial data has been added');
+  await expect(page.getByRole('heading', { name: 'Admin Accounting', exact: true })).toBeVisible();
+  await expect(page.locator('.accounting-table tbody tr')).toHaveCount(12);
 });

@@ -161,6 +161,8 @@ var DEFAULT_PROJECT_TYPES=[
   {name:"Financial",subtypes:["Bank Branch","Credit Union","Financial Office"]},{name:"Government",subtypes:[]},
   {name:"Recreational",subtypes:[]},{name:"Other",subtypes:[]}
 ];
+var EXPENSE_TYPES=["Permit Fee","Permit Revision Fee","Site Visit","Taxi / Uber","Mileage / Gas","Parking","Meal","Flight","Hotel","Printing","Courier","Consultant Fee","Miscellaneous"];
+var PAYMENT_METHODS=["Company Card","Personal Card","Cash","Bank Transfer","Cheque","Other"];
 
 var CONSTRUCTION_REGISTERS={
   specifications:{label:"Specifications",icon:"book-open-text",prefix:"SPEC",description:"Project manual, specification sections and revisions"},
@@ -308,6 +310,7 @@ var activeStage=null;
 var adminMemberFilter=null;
 var currentFilters={query:"",type:"",status:"",priority:"",user:"",high:false};
 var currentProjectLifecycle="Active";
+var accountingFilters={project:"",client:"",member:"",type:"",dateFrom:"",dateTo:"",payment:"",reimbursement:""};
 var scopeEditingId=null;
 var editContext=null;
 
@@ -398,6 +401,17 @@ function defaultMeetings(project,index){
     actions:task?[{id:uid("action"),title:task[1],assignee:project.lead||"Project Team",due:task[2],priority:task[3],taskId:task[0]}]:[]
   }];
 }
+function defaultExpenses(project,index){
+  var members=project.assigned||[],paidBy=members[index%Math.max(1,members.length)]||members[0]||"admin";
+  var examples=[
+    ["Site Visit","Construction site review travel",86.40,"2026-08-28","Parkway Parking","PK-0828","Personal Card","Paid","Pending"],
+    ["Permit Fee","Municipal permit application fee",1240,"2026-08-18","City of Toronto","BP-2026-01482","Company Card","Paid","Not Required"],
+    ["Printing","Permit drawing set printing",214.75,"2026-08-17","Metro Reprographics","MR-2481","Company Card","Paid","Not Required"],
+    ["Taxi / Uber","Site meeting transportation",42.65,"2026-08-26","Uber","UB-826","Personal Card","Paid","Reimbursed"],
+    ["Courier","Tender addendum courier",58,"2026-08-29","City Express","CE-441","Company Card","Paid","Not Required"]
+  ],e=examples[index%examples.length];
+  return [{id:uid("expense"),workspaceId:project.workspaceId,projectId:project.id,type:e[0],description:e[1],amount:e[2],date:e[3],paidBy:paidBy,invoiceNumber:e[5],vendor:e[4],paymentMethod:e[6],receipt:"",notes:"Hosis demo expense record.",paymentStatus:e[7],reimbursementStatus:e[8],createdBy:paidBy}];
+}
 function normalizeProject(project,index){
   project.workspaceId=project.workspaceId||DEFAULT_WORKSPACE.id;
   project.lifecycle=project.lifecycle==="Archived"?"Archived":"Active";
@@ -468,6 +482,8 @@ function normalizeProject(project,index){
   project.permitData.cycles.forEach(function(cycle){cycle.comments=Array.isArray(cycle.comments)?cycle.comments:[];});
   project.activity=Array.isArray(project.activity)?project.activity:[];
   project.documents=Array.isArray(project.documents)?project.documents:[];
+  project.expenses=Array.isArray(project.expenses)?project.expenses:defaultExpenses(project,index);
+  project.expenses.forEach(function(expense){expense.id=expense.id||uid("expense");expense.workspaceId=expense.workspaceId||project.workspaceId;expense.projectId=project.id;expense.amount=Number(expense.amount)||0;expense.paymentStatus=expense.paymentStatus||"Paid";expense.reimbursementStatus=expense.reimbursementStatus||"Pending";expense.createdBy=expense.createdBy||expense.paidBy||"admin";});
   project.notes=project.notes||"";
   return project;
 }
@@ -529,7 +545,7 @@ function dashboardProjects(){
 }
 function workspaceProjects(){return state.role==="admin"&&adminMemberFilter?dashboardProjects():visibleProjects();}
 function priorityClass(value){return String(value||"Medium").toLowerCase();}
-function formatCurrency(value){var number=Number(value)||0;return number.toLocaleString("en-CA",{style:"currency",currency:"CAD",maximumFractionDigits:0});}
+function formatCurrency(value){var number=Number(value)||0;return number.toLocaleString("en-CA",{style:"currency",currency:"CAD",minimumFractionDigits:2,maximumFractionDigits:2});}
 function stageLabel(key){return STAGES[key]?STAGES[key].label:key==="admin"?"Project Administration (archived)":key;}
 function projectById(id){return allWorkspaceProjects().find(function(p){return p.id===id});}
 function stageProgress(project,key){
@@ -621,7 +637,8 @@ function render(){
   else if(currentView==="meetings")renderMeetingsPage();
   else if(currentView==="tasks")renderTasksPage();
   else if(currentView==="files")renderFilesPage();
-  else if(currentView==="accounting"||currentView==="expenses")renderDeferredModule(currentView);
+  else if(currentView==="accounting")renderAccountingPage();
+  else if(currentView==="expenses")renderExpensesPage();
   else if(currentView==="members"&&state.role==="admin")renderMembersPage();
   else if(currentView==="settings"&&state.role==="admin")renderSettingsPage();
   else if(DIRECTORIES[currentView]){currentDirectory=currentView;renderDirectory();}
@@ -759,11 +776,24 @@ function renderFilesPage(){
   document.getElementById("content").innerHTML='<div class="section-title"><div><span class="section-kicker">DOCUMENTS</span><h2>'+(state.role==="admin"?'Workspace Files':'My Files')+'</h2><p>Documents aggregated from every '+(state.role==="admin"?'workspace':'assigned')+' project.</p></div><span class="directory-count">'+rows.length+' files</span></div><section class="panel files-register"><div class="files-register-head"><span>Document</span><span>Project</span><span>Stage</span><span>Type / Size</span></div>'+(rows.length?rows.map(function(row){return '<button class="files-register-row" data-project="'+row.project.id+'"><span>'+icon("file-text")+'<strong>'+esc(row.document[0])+'</strong></span><span>'+esc(row.project.number+' · '+row.project.name)+'</span><span>'+esc(stageLabel(row.document[1]))+'</span><span>'+esc(row.document[2])+icon("arrow-up-right")+'</span></button>';}).join(""):'<p class="directory-empty">No files are available in the visible projects.</p>')+'</section>';
   bindCommon();
 }
-function renderDeferredModule(view){
-  var isExpenses=view==="expenses",title=isExpenses?"Expenses":"Accounting";
-  setHeading((isExpenses?"My Workspace":"Finance")+" / "+title,title);
-  document.getElementById("content").innerHTML='<section class="deferred-module panel"><span class="deferred-icon">'+icon(isExpenses?"receipt-text":"landmark")+'</span><span class="section-kicker">PHASE 2</span><h2>'+title+'</h2><p>This navigation is role-ready, but the full '+title.toLowerCase()+' system is intentionally reserved for Phase 2. No placeholder financial data has been added.</p><button class="secondary-button" data-view-return>'+icon("arrow-left")+'Return to dashboard</button></section>';
-  document.querySelector("[data-view-return]").addEventListener("click",function(){currentView="dashboard";render();});
+function allExpenseRows(){var rows=[];allWorkspaceProjects().forEach(function(project){project.expenses.forEach(function(expense,index){rows.push({project:project,expense:expense,index:index});});});return rows;}
+function filterExpenseRow(row){var e=row.expense,p=row.project;return (!accountingFilters.project||p.id===accountingFilters.project)&&(!accountingFilters.client||p.client===accountingFilters.client)&&(!accountingFilters.member||e.paidBy===accountingFilters.member)&&(!accountingFilters.type||e.type===accountingFilters.type)&&(!accountingFilters.dateFrom||e.date>=accountingFilters.dateFrom)&&(!accountingFilters.dateTo||e.date<=accountingFilters.dateTo)&&(!accountingFilters.payment||e.paymentStatus===accountingFilters.payment)&&(!accountingFilters.reimbursement||e.reimbursementStatus===accountingFilters.reimbursement);}
+function expenseOption(value,label,current){return '<option value="'+esc(value)+'"'+(value===current?' selected':'')+'>'+esc(label)+'</option>';}
+function renderAccountingPage(){
+  var all=allExpenseRows(),rows=all.filter(filterExpenseRow).sort(function(a,b){return b.expense.date.localeCompare(a.expense.date);}),clients=Array.from(new Set(allWorkspaceProjects().map(function(p){return p.client;}))).sort();
+  setHeading("Finance / Accounting","Accounting");
+  var filters='<section class="accounting-filters"><label>Project<select data-accounting-filter="project"><option value="">All projects</option>'+allWorkspaceProjects().map(function(p){return expenseOption(p.id,p.number+' · '+p.name,accountingFilters.project);}).join("")+'</select></label><label>Client<select data-accounting-filter="client"><option value="">All clients</option>'+clients.map(function(client){return expenseOption(client,client,accountingFilters.client);}).join("")+'</select></label><label>Member<select data-accounting-filter="member"><option value="">All members</option>'+Object.keys(USERS).map(function(id){return expenseOption(id,USERS[id].name,accountingFilters.member);}).join("")+'</select></label><label>Expense Type<select data-accounting-filter="type"><option value="">All types</option>'+EXPENSE_TYPES.map(function(type){return expenseOption(type,type,accountingFilters.type);}).join("")+'</select></label><label>Date From<input type="date" data-accounting-filter="dateFrom" value="'+esc(accountingFilters.dateFrom)+'"></label><label>Date To<input type="date" data-accounting-filter="dateTo" value="'+esc(accountingFilters.dateTo)+'"></label><label>Payment Status<select data-accounting-filter="payment"><option value="">All payment states</option>'+["Paid","Pending","Cancelled"].map(function(status){return expenseOption(status,status,accountingFilters.payment);}).join("")+'</select></label><label>Reimbursement<select data-accounting-filter="reimbursement"><option value="">All reimbursement states</option>'+["Pending","Reimbursed","Not Required","Rejected"].map(function(status){return expenseOption(status,status,accountingFilters.reimbursement);}).join("")+'</select></label><button data-clear-accounting>'+icon("rotate-ccw")+'Clear filters</button></section>';
+  var table='<section class="panel accounting-register"><div class="accounting-table-wrap"><table class="accounting-table"><thead><tr><th>Date</th><th>Project / Client</th><th>Member</th><th>Expense Type</th><th>Vendor / Receipt</th><th>Amount</th><th>Payment</th><th>Reimbursement</th><th></th></tr></thead><tbody>'+(rows.length?rows.map(function(row){var e=row.expense,p=row.project;return '<tr><td>'+formatDate(e.date)+'</td><td><button data-project="'+p.id+'"><strong>'+esc(p.number+' · '+p.name)+'</strong><small>'+esc(p.client)+'</small></button></td><td>'+esc(expenseMemberName(e.paidBy))+'</td><td><strong>'+esc(e.type)+'</strong><small>'+esc(e.description)+'</small></td><td>'+esc(e.vendor||"—")+'<small>'+esc(e.invoiceNumber||"No number")+'</small></td><td><b>'+formatCurrency(e.amount)+'</b></td><td><span class="payment-status">'+esc(e.paymentStatus)+'</span></td><td><span class="reimbursement-status '+esc(e.reimbursementStatus.toLowerCase().replace(/\s+/g,"-"))+'">'+esc(e.reimbursementStatus)+'</span></td><td><button class="icon-button micro" data-accounting-edit="'+p.id+'" data-expense-index="'+row.index+'" aria-label="Edit expense">'+icon("pencil")+'</button></td></tr>';}).join(""):'<tr><td colspan="9" class="table-empty">No expenses match these filters.</td></tr>')+'</tbody></table></div></section>';
+  document.getElementById("content").innerHTML='<div class="section-title"><div><span class="section-kicker">COMPANY FINANCE</span><h2>Admin Accounting</h2><p>Every workspace expense from active and archived projects, with one source of truth.</p></div><span class="directory-count">'+rows.length+' of '+all.length+' expenses</span></div>'+renderExpenseMetrics(rows.map(function(row){return row.expense;}),false)+filters+table;
+  document.querySelectorAll('[data-accounting-filter]').forEach(function(field){field.addEventListener("change",function(){accountingFilters[field.dataset.accountingFilter]=field.value;renderAccountingPage();});});
+  document.querySelector('[data-clear-accounting]').addEventListener("click",function(){Object.keys(accountingFilters).forEach(function(key){accountingFilters[key]="";});renderAccountingPage();});
+  document.querySelectorAll('[data-accounting-edit]').forEach(function(button){button.addEventListener("click",function(){openEditor(projectById(button.dataset.accountingEdit),"expenses",Number(button.dataset.expenseIndex),null);});});bindCommon();
+}
+function renderExpensesPage(){
+  var member=USERS[state.userId],projects=visibleProjects(true),rows=[];projects.forEach(function(project){project.expenses.forEach(function(expense,index){if(expense.paidBy===state.userId||expense.createdBy===state.userId)rows.push({project:project,expense:expense,index:index});});});rows.sort(function(a,b){return b.expense.date.localeCompare(a.expense.date);});
+  setHeading("My Workspace / Expenses","My Expenses");
+  document.getElementById("content").innerHTML='<div class="section-title"><div><span class="section-kicker">PERSONAL EXPENSES</span><h2>'+esc(member.name)+' · Expenses</h2><p>Submit an expense once; it appears here, in the project and in Admin Accounting.</p></div><button class="primary-button" data-add-member-expense>'+icon("plus")+'Submit Expense</button></div>'+renderExpenseMetrics(rows.map(function(row){return row.expense;}),true)+'<section class="panel member-expense-list">'+(rows.length?rows.map(function(row){var e=row.expense,p=row.project;return '<button data-project="'+p.id+'"><span class="expense-type-icon">'+icon("receipt-text")+'</span><span><strong>'+esc(e.description)+'</strong><small>'+esc(p.number+' · '+p.name+' · '+e.type)+'</small></span><time>'+formatDate(e.date)+'</time><b>'+formatCurrency(e.amount)+'</b><span class="reimbursement-status '+esc(e.reimbursementStatus.toLowerCase().replace(/\s+/g,"-"))+'">'+esc(e.reimbursementStatus)+'</span></button>';}).join(""):'<div class="table-empty">No expenses submitted yet.</div>')+'</section>';
+  document.querySelector('[data-add-member-expense]').addEventListener("click",function(){openEditor(null,"memberExpense",-1,null);});bindCommon();
 }
 
 function meetingActionState(project,action){var task=project.tasks.find(function(t){return t[0]===action.taskId;});return task||[action.taskId,action.title,action.due,action.priority,false];}
@@ -930,6 +960,13 @@ function companyCard(company,index){
   var logo=/^https:\/\//i.test(company.logo||"")?company.logo:"";
   return '<article class="company-card"><div class="company-heading"><div class="company-logo"><span>'+esc(initials(company.name))+'</span>'+(logo?'<img src="'+esc(logo)+'" alt="'+esc(company.name)+' logo" loading="lazy" referrerpolicy="no-referrer">':'')+'</div><div class="contact-copy"><small>'+esc(company.category)+'</small><h4>'+esc(company.name)+'</h4></div></div>'+(company.contact?'<p class="company-contact">'+esc(company.contact)+'</p>':'')+contactLinks(company)+'<div class="company-footer"><small>'+(logo?'Company logo':'Logo placeholder')+'</small><div class="row-actions">'+adminButton("Edit","companies",index)+deleteButton("companies",index)+'</div></div></article>';
 }
+function expenseMemberName(id){return USERS[id]?USERS[id].name:id==="admin"?"Hosis Admin":"Not assigned";}
+function expenseTotals(expenses){return expenses.reduce(function(total,expense){total.total+=Number(expense.amount)||0;if(expense.reimbursementStatus==="Reimbursed")total.reimbursed+=Number(expense.amount)||0;if(expense.reimbursementStatus==="Pending")total.pending+=Number(expense.amount)||0;return total;},{total:0,reimbursed:0,pending:0});}
+function renderExpenseMetrics(expenses,personal){var totals=expenseTotals(expenses);return '<div class="expense-metrics"><span><small>'+(personal?'Total Paid':'Project Expense Total')+'</small><b>'+formatCurrency(totals.total)+'</b></span><span><small>Reimbursed</small><b>'+formatCurrency(totals.reimbursed)+'</b></span><span><small>Pending Reimbursement</small><b>'+formatCurrency(totals.pending)+'</b></span></div>';}
+function renderProjectAccounting(project){
+  var expenses=project.expenses.slice().sort(function(a,b){return b.date.localeCompare(a.date);});
+  return renderExpenseMetrics(expenses,false)+'<div class="expense-table-wrap"><table class="expense-table"><thead><tr><th>Date</th><th>Expense</th><th>Paid By</th><th>Vendor / Receipt</th><th>Amount</th><th>Reimbursement</th><th></th></tr></thead><tbody>'+(expenses.length?expenses.map(function(expense){var index=project.expenses.indexOf(expense);return '<tr><td>'+formatDate(expense.date)+'</td><td><strong>'+esc(expense.type)+'</strong><small>'+esc(expense.description)+'</small></td><td>'+esc(expenseMemberName(expense.paidBy))+'<small>'+esc(expense.paymentMethod)+'</small></td><td>'+esc(expense.vendor||"—")+'<small>'+esc(expense.invoiceNumber||"No receipt number")+'</small></td><td><b>'+formatCurrency(expense.amount)+'</b><small>'+esc(expense.paymentStatus)+'</small></td><td><span class="reimbursement-status '+esc(expense.reimbursementStatus.toLowerCase().replace(/\s+/g,"-"))+'">'+esc(expense.reimbursementStatus)+'</span></td><td>'+(state.role==="admin"?'<div class="row-actions">'+adminButton("Edit","expenses",index)+deleteButton("expenses",index)+'</div>':'')+'</td></tr>';}).join(""):'<tr><td colspan="7" class="table-empty">No expenses submitted for this project.</td></tr>')+'</tbody></table></div>';
+}
 var PROJECT_SECTION_KEYS=["overview","workflow","meetings","schedule","team","companies","documents","accounting","activity","tasks","notes"];
 function sectionIsOpen(project,key){
   var stored=state.ui.projectSections[project.id]||{};
@@ -954,6 +991,7 @@ function renderProject(id){
   var documentsBody='<div class="compact-register">'+(p.documents.length?p.documents.map(function(d,i){return '<article><span>'+icon("file-text")+'</span><div><strong>'+esc(d[0])+'</strong><small>'+esc(stageLabel(d[1])+' · '+d[2])+'</small></div><div class="row-actions">'+adminButton("Edit","documents",i)+deleteButton("documents",i)+'</div></article>';}).join(""):'<p class="inline-empty">No project documents yet.</p>')+'</div>';
   var activityBody='<div class="compact-register">'+(p.activity.length?p.activity.map(function(a,i){return '<article><span>'+icon("activity")+'</span><div><strong>'+esc(a[0])+'</strong><small>'+esc(a[1]+' · '+stageLabel(a[2]))+'</small></div><div class="row-actions">'+adminButton("Edit","activity",i)+deleteButton("activity",i)+'</div></article>';}).join(""):'<p class="inline-empty">No project activity yet.</p>')+'</div>';
   var taskBody='<div class="task-list">'+tasks+'</div>';
+  var accountingBody=renderProjectAccounting(p);
   var notesBody='<textarea id="projectNotes" aria-label="Project Notes" '+(state.role==="admin"?'':'readonly ')+'placeholder="Add project notes…">'+esc(p.notes)+'</textarea><small class="save-hint">'+(state.role==="admin"?'Saved automatically in this browser.':'Read-only for assigned users.')+'</small>';
   var html=
     '<section class="project-hero'+(p.lifecycle==="Archived"?' archived-project':'')+'"><img src="'+esc(p.image)+'" alt="'+esc(p.name)+'"><div class="project-hero-top"><button class="back-button" data-go-gallery>'+icon("arrow-left")+'Projects</button><div class="card-tags"><span class="pill">'+esc(p.status)+'</span><span class="pill '+(p.lifecycle==="Archived"?'archived-pill':priorityClass(p.priority))+'">'+esc(p.lifecycle==="Archived"?'Archived':p.priority+' Priority')+'</span></div></div><div class="project-hero-main"><div><div class="eyebrow">'+esc(p.number+" · "+p.typeCategory+(p.typeSubtype?' / '+p.typeSubtype:''))+'</div><h1>'+esc(p.name)+'</h1><p>'+icon("map-pin")+' '+esc(p.address)+' &nbsp; · &nbsp; '+esc(p.area)+'</p></div><div class="project-hero-actions">'+adminControls+(state.role==="admin"?'<button class="ghost-button" data-project-lifecycle="'+(p.lifecycle==="Archived"?'Active':'Archived')+'">'+icon(p.lifecycle==="Archived"?"archive-restore":"archive")+(p.lifecycle==="Archived"?'Restore Project':'Archive Project')+'</button><button class="ghost-button" data-edit="project" data-index="-1">'+icon("square-pen")+'Edit Project</button><button class="ghost-button" id="editScope">'+icon("sliders-horizontal")+'Edit Scope</button>':'')+'<button class="ghost-button" onclick="window.print()">'+icon("printer")+'Print / PDF</button></div></div></section>'+
@@ -966,6 +1004,7 @@ function renderProject(id){
       projectAccordion(p,"team","Project Team",p.assigned.length+' assigned workspace members',"users",teamBody,state.role==="admin"?'<button class="section-action" data-add="team">'+icon("user-plus")+'Add</button>':'')+
       projectAccordion(p,"companies","Project Companies",p.companies.length+' client, consultant and contractor records',"building-2",companiesBody,state.role==="admin"?'<button class="section-action" data-add="companies">'+icon("plus")+'Add company</button>':'')+
       projectAccordion(p,"documents","Documents",p.documents.length+' project files',"files",documentsBody,state.role==="admin"?'<button class="section-action" data-add="documents">'+icon("plus")+'Add</button>':'')+
+      projectAccordion(p,"accounting","Accounting & Expenses",p.expenses.length+' expense records',"receipt-text",accountingBody,'<button class="section-action" data-add="expenses">'+icon("plus")+'Add expense</button>')+
       projectAccordion(p,"activity","Activity","Project history and recorded updates","activity",activityBody,state.role==="admin"?'<button class="section-action" data-add="activity">'+icon("plus")+'Add</button>':'')+
     '</div><aside class="detail-stack">'+
       projectAccordion(p,"notes","Project Notes","Workspace notes saved with this project","sticky-note",notesBody)+
@@ -986,6 +1025,7 @@ function renderProject(id){
     document.querySelectorAll("[data-shift-schedule]").forEach(function(button){button.addEventListener("click",function(){var item=p.schedule[Number(button.dataset.shiftSchedule)],days=Number(button.dataset.days);item.start=addDays(item.start,days);item.end=addDays(item.end,days);saveState();renderProject(p.id);toast(stageLabel(item.stage)+" shifted "+Math.abs(days)+" days");});});
     bindAdminEditor(p);
   }
+  if(state.role==="user")document.querySelectorAll('[data-add="expenses"]').forEach(function(button){button.addEventListener("click",function(){openEditor(p,"expenses",-1,null);});});
   document.querySelectorAll(".company-logo img").forEach(function(img){img.addEventListener("error",function(){img.remove();});});
   bindCommon();refreshIcons();
 }
@@ -1046,6 +1086,16 @@ function editorConfig(project,kind,index,stageKey){
   if(kind==="companyLogo"){
     item=project&&project.companies[index];if(!item)return null;
     return {title:"Edit "+item.name+" Logo",description:"This logo stays attached to the company record inside "+project.number+".",fields:[{name:"logo",label:"Company Logo URL",type:"url",value:item.logo||"",wide:true,required:false}],validate:function(v){return !v.logo||/^https:\/\/\S+$/i.test(v.logo)?"":"Use a secure HTTPS image URL.";},save:function(v){item.logo=v.logo;}};
+  }
+  if(kind==="expenses"||kind==="memberExpense"){
+    var memberSubmission=kind==="memberExpense",targetProject=memberSubmission?null:project;
+    item=memberSubmission||creating?{id:uid("expense"),workspaceId:state.activeWorkspaceId,projectId:targetProject?targetProject.id:"",type:"Site Visit",description:"",amount:0,date:isoDate(new Date()),paidBy:state.role==="user"?state.userId:"admin",invoiceNumber:"",vendor:"",paymentMethod:state.role==="user"?"Personal Card":"Company Card",receipt:"",notes:"",paymentStatus:"Paid",reimbursementStatus:state.role==="user"?"Pending":"Not Required",createdBy:state.role==="user"?state.userId:"admin"}:project.expenses[index];
+    var fields=[];
+    if(memberSubmission)fields.push({name:"projectId",label:"Related Project",type:"select",options:visibleProjects().map(function(p){return [p.id,p.number+' · '+p.name];}),value:item.projectId||visibleProjects()[0]&&visibleProjects()[0].id});
+    fields=fields.concat([{name:"type",label:"Expense Type",type:"select",options:EXPENSE_TYPES.map(function(type){return [type,type];}),value:item.type},{name:"description",label:"Description",value:item.description,wide:true},{name:"amount",label:"Amount (CAD)",type:"number",value:item.amount},{name:"date",label:"Date",type:"date",value:item.date}]);
+    if(state.role==="admin")fields.push({name:"paidBy",label:"Paid By",type:"select",options:[["admin","Hosis Admin"]].concat(Object.keys(USERS).map(function(id){return [id,USERS[id].name];})),value:item.paidBy});
+    fields=fields.concat([{name:"invoiceNumber",label:"Invoice / Receipt Number",value:item.invoiceNumber||"",required:false},{name:"vendor",label:"Vendor",value:item.vendor||"",required:false},{name:"paymentMethod",label:"Payment Method",type:"select",options:PAYMENT_METHODS.map(function(method){return [method,method];}),value:item.paymentMethod},{name:"receipt",label:"Receipt Attachment URL",type:"url",value:item.receipt||"",wide:true,required:false},{name:"paymentStatus",label:"Payment Status",type:"select",options:[["Paid","Paid"],["Pending","Pending"],["Cancelled","Cancelled"]],value:item.paymentStatus},{name:"reimbursementStatus",label:"Reimbursement Status",type:"select",options:[["Pending","Pending"],["Reimbursed","Reimbursed"],["Not Required","Not Required"],["Rejected","Rejected"]],value:item.reimbursementStatus},{name:"notes",label:"Notes",type:"textarea",value:item.notes||"",wide:true,required:false}]);
+    return {title:(creating||memberSubmission)?"Submit Expense":"Edit Expense",description:"This record is shared by the related project, member Expenses and Admin Accounting.",fields:fields,validate:function(v){if(memberSubmission&&!v.projectId)return "Select a related project.";if(!(Number(v.amount)>0))return "Amount must be greater than zero.";if(v.receipt&&!/^https:\/\/\S+$/i.test(v.receipt))return "Use a secure HTTPS receipt attachment URL.";return "";},save:function(v){var destination=memberSubmission?projectById(v.projectId):project;if(!destination)return;delete v.projectId;v.amount=Number(v.amount)||0;if(state.role==="user")v.paidBy=state.userId;Object.assign(item,v,{workspaceId:state.activeWorkspaceId,projectId:destination.id});if(creating||memberSubmission)destination.expenses.push(item);}};
   }
   function stageChoices(){return project.scope.map(function(k){return [k,stageLabel(k)]});}
   if(kind==="project")return {title:"Edit Project Information",description:"Update overview, access and the project image.",fields:[
@@ -1137,9 +1187,10 @@ function fieldHtml(field){
 }
 function openEditor(project,kind,index,stageKey){
   var selfEdit=kind==="memberSelf"&&state.role==="user"&&state.userId===stageKey;
-  if(state.role!=="admin"&&!selfEdit)return;var cfg=editorConfig(project,kind,index,stageKey);if(!cfg)return;
+  var expenseEdit=state.role==="user"&&(kind==="memberExpense"||(kind==="expenses"&&project&&project.assigned.indexOf(state.userId)>-1&&index<0));
+  if(state.role!=="admin"&&!selfEdit&&!expenseEdit)return;var cfg=editorConfig(project,kind,index,stageKey);if(!cfg)return;
   editContext={project:project,kind:kind,index:index,stageKey:stageKey,config:cfg};
-  document.querySelector("#editModal .eyebrow").textContent=selfEdit?"PROFILE EDITOR":"ADMIN EDITOR";
+  document.querySelector("#editModal .eyebrow").textContent=selfEdit?"PROFILE EDITOR":expenseEdit?"EXPENSE SUBMISSION":"ADMIN EDITOR";
   document.getElementById("editModalTitle").textContent=cfg.title;document.getElementById("editModalDescription").textContent=cfg.description||"Changes are saved locally in this browser.";
   document.getElementById("editFields").innerHTML=cfg.fields.map(fieldHtml).join("");document.getElementById("editModal").classList.remove("hidden");refreshIcons();
 }
@@ -1148,7 +1199,7 @@ function saveEditor(form){
   if(!editContext)return;var data=new FormData(form),values={};
   editContext.config.fields.forEach(function(f){if(f.type==="checks")values[f.name]=data.getAll(f.name);else if(f.type==="checkbox")values[f.name]=data.has(f.name);else values[f.name]=data.get(f.name)});
   var error=editContext.config.validate?editContext.config.validate(values):"";if(error){toast(error);return}
-  editContext.config.save(values);saveState();var project=editContext.project,kind=editContext.kind;if(kind==="memberProfile")populateWelcomeUsers();closeEditor();if(kind==="companyLogo"||kind==="settings"||kind==="workspaceGeneral"||kind==="projectType")renderSettingsPage();else if(kind==="memberProfile"){if(currentView==="members")renderMembersPage();else if(currentView==="settings")renderSettingsPage();else renderDashboard();}else if(kind==="memberSelf")renderDashboard();else if(project)renderProject(project.id);toast("Changes saved");
+  editContext.config.save(values);saveState();var project=editContext.project,kind=editContext.kind;if(kind==="memberProfile")populateWelcomeUsers();closeEditor();if(kind==="companyLogo"||kind==="settings"||kind==="workspaceGeneral"||kind==="projectType")renderSettingsPage();else if(kind==="memberProfile"){if(currentView==="members")renderMembersPage();else if(currentView==="settings")renderSettingsPage();else renderDashboard();}else if(kind==="memberSelf")renderDashboard();else if(kind==="memberExpense")renderExpensesPage();else if(kind==="expenses"&&currentView==="accounting")renderAccountingPage();else if(project)renderProject(project.id);toast("Changes saved");
 }
 function deleteRecord(project,kind,index,stageKey){
   if(!confirm("Delete this record?"))return;
