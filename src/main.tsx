@@ -27,8 +27,10 @@ function IntroHost() {
     entry?.classList.toggle('entry-mode', stage === 'login');
 
     if (stage === 'login') {
+      const focusEntryHeading = () => document.getElementById('welcomeTitle')?.focus({ preventScroll: true });
       window.requestAnimationFrame(() => {
-        document.getElementById('welcomeTitle')?.focus({ preventScroll: true });
+        focusEntryHeading();
+        window.setTimeout(focusEntryHeading, 120);
         document.dispatchEvent(new Event('hosis:intro:enter'));
       });
     }
