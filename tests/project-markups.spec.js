@@ -124,7 +124,8 @@ test('legacy administration and user edits survive migration and repeated reload
 
 test('assigned user cannot edit milestones, registers, contacts or project notes', async ({ page }) => {
   await openProject(page, true);
-  await expect(page.locator('[data-milestone-status], [data-add], [data-edit], [data-delete]')).toHaveCount(0);
+  await expect(page.locator('[data-milestone-status], [data-add]:not([data-add="expenses"]), [data-edit], [data-delete]')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Add expense', exact: true })).toBeVisible();
   await expect(page.getByLabel('Project Notes', { exact: true })).toHaveAttribute('readonly', '');
   await expect(page.locator('.milestone-status.read-only')).toHaveCount(15);
 });
