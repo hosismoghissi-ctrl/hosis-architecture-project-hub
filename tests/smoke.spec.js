@@ -53,7 +53,7 @@ test("admin can edit records and schedule dates", async ({ page }) => {
 test("portfolio schedule shows projects and overlapping stage bars", async ({ page }) => {
   await skipIntro(page);
   await page.getByRole("button", { name: /Continue as Admin/i }).click();
-  await page.getByRole("button", { name: /Project Schedule/i }).click();
+  await page.getByRole("button", { name: /^Schedule$/i }).click();
   await expect(page.getByRole("heading", { name: "Project Schedule", exact: true })).toBeVisible();
   await expect(page.locator(".timeline-row")).toHaveCount(12);
   await expect(page.locator(".timeline-bar").first()).toBeVisible();

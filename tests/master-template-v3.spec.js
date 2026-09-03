@@ -15,17 +15,17 @@ async function openProject(page, id) {
 
 test('expanded simulation includes eight members and twelve projects', async ({ page }) => {
   await enterAdmin(page);
-  await expect(page.locator('.member-card')).toHaveCount(8);
+  await expect(page.locator('.team-overview-row')).toHaveCount(8);
   await expect(page.locator('.dashboard-projects .project-card')).toHaveCount(12);
   await page.locator('[data-view="members"]').click();
-  await expect(page.locator('.member-profile-card')).toHaveCount(8);
+  await expect(page.locator('.members-table-row')).toHaveCount(8);
 });
 
 test('admin edits the shared header and changes menu order with accessible controls', async ({ page }) => {
   await enterAdmin(page);
   await page.locator('[data-view="settings"]').click();
-  await page.getByRole('button', { name: 'Edit workspace header' }).click();
-  await page.getByLabel('Dashboard Heading').fill('Projects, people and delivery in one view.');
+  await page.getByRole('button', { name: /Edit company branding/i }).click();
+  await page.getByLabel('Company Welcome Text').fill('Projects, people and delivery in one view.');
   await page.getByRole('button', { name: 'Save Changes' }).click();
   await expect(page.locator('.brand-preview')).toContainText('Projects, people and delivery in one view.');
 

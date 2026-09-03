@@ -114,14 +114,14 @@ function stageCompletion(project,key){
 }
 
 var USERS={
-  maya:{name:"Maya Chen",role:"Architectural Coordinator",initials:"MC",photo:"https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=240&q=82"},
-  liam:{name:"Liam Brooks",role:"Project Technologist",initials:"LB",photo:"https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=240&q=82"},
-  sofia:{name:"Sofia Martinez",role:"Project Designer",initials:"SM",photo:"https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=240&q=82"},
-  noah:{name:"Noah Williams",role:"Senior Project Manager",initials:"NW",photo:"https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=240&q=82"},
-  amina:{name:"Amina Yusuf",role:"Interior Designer",initials:"AY",photo:"https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=240&q=82"},
-  ethan:{name:"Ethan Park",role:"Contract Administrator",initials:"EP",photo:"https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=240&q=82"},
-  chloe:{name:"Chloe Martin",role:"BIM Coordinator",initials:"CM",photo:"https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=240&q=82"},
-  daniel:{name:"Daniel Rossi",role:"Architectural Technologist",initials:"DR",photo:"https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=240&q=82"}
+  maya:{name:"Maya Chen",role:"Architectural Coordinator",email:"maya@hosis.demo",initials:"MC",photo:"https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=240&q=82",banner:"https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&w=1800&q=84",welcome:"Keep every drawing, decision and deadline moving."},
+  liam:{name:"Liam Brooks",role:"Project Technologist",email:"liam@hosis.demo",initials:"LB",photo:"https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=240&q=82",banner:"https://images.unsplash.com/photo-1497366811353-6870744d04b2?auto=format&fit=crop&w=1800&q=84",welcome:"Your coordinated project workload, in one place."},
+  sofia:{name:"Sofia Martinez",role:"Project Designer",email:"sofia@hosis.demo",initials:"SM",photo:"https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=240&q=82",banner:"https://images.unsplash.com/photo-1497215728101-856f4ea42174?auto=format&fit=crop&w=1800&q=84",welcome:"Design priorities and permit deadlines, clearly organized."},
+  noah:{name:"Noah Williams",role:"Senior Project Manager",email:"noah@hosis.demo",initials:"NW",photo:"https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=240&q=82",banner:"https://images.unsplash.com/photo-1524758631624-e2822e304c36?auto=format&fit=crop&w=1800&q=84",welcome:"Lead the team with a clear view of every commitment."},
+  amina:{name:"Amina Yusuf",role:"Interior Designer",email:"amina@hosis.demo",initials:"AY",photo:"https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=240&q=82",banner:"https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1800&q=84",welcome:"Your active interiors work and next decisions."},
+  ethan:{name:"Ethan Park",role:"Contract Administrator",email:"ethan@hosis.demo",initials:"EP",photo:"https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=240&q=82",banner:"https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&w=1800&q=84",welcome:"Construction actions, meetings and deadlines at a glance."},
+  chloe:{name:"Chloe Martin",role:"BIM Coordinator",email:"chloe@hosis.demo",initials:"CM",photo:"https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=240&q=82",banner:"https://images.unsplash.com/photo-1517502884422-41eaead166d4?auto=format&fit=crop&w=1800&q=84",welcome:"Coordinate models, teams and upcoming deliverables."},
+  daniel:{name:"Daniel Rossi",role:"Architectural Technologist",email:"daniel@hosis.demo",initials:"DR",photo:"https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=240&q=82",banner:"https://images.unsplash.com/photo-1497366412874-3415097a27e7?auto=format&fit=crop&w=1800&q=84",welcome:"A focused view of the projects that need you next."}
 };
 
 var PERMIT_DISCIPLINES={
@@ -136,7 +136,20 @@ var DEFAULT_SETTINGS={
   dashboardHeading:"Project intelligence, clearly delivered.",
   dashboardSummary:"Company-wide project delivery, team workload and coordination.",
   dashboardImage:"https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1800&q=84",
-  menuOrder:["dashboard","gallery","schedule","meetings","priority"]
+  menuOrder:["dashboard","gallery","schedule","tasks"]
+};
+var DEFAULT_WORKSPACE={
+  id:"hosis-architecture",
+  companyHeader:{
+    name:"Hosis Architecture",
+    logo:"",
+    banner:"https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1800&q=84",
+    welcome:"Project intelligence, clearly delivered.",
+    summary:"Company-wide project delivery, team workload and coordination.",
+    accent:"#607be8"
+  },
+  permissions:{memberCanEditPhoto:true,memberCanEditBanner:true},
+  general:{workspaceTitle:"Project Delivery & Coordination",timezone:"America/Toronto",dateFormat:"MMM D, YYYY"}
 };
 
 var CONSTRUCTION_REGISTERS={
@@ -274,7 +287,9 @@ INITIAL_PROJECTS=INITIAL_PROJECTS.concat([
 ]);
 
 var KEY="hosisHubPrototypeV1";
+var INITIAL_MEMBERS=clone(USERS);
 var state=loadState();
+USERS=state.members;
 var currentView="dashboard";
 var currentProjectId=null;
 var currentDirectory="clients";
@@ -373,6 +388,7 @@ function defaultMeetings(project,index){
   }];
 }
 function normalizeProject(project,index){
+  project.workspaceId=project.workspaceId||DEFAULT_WORKSPACE.id;
   // Keep legacy administration records; they must not become survey evidence.
   if(project.scope.indexOf("admin")>-1){
     project.legacyAdministration=project.legacyAdministration||{stageItems:clone((project.stageItems||{}).admin||STAGE_ITEMS.admin),schedule:clone((project.schedule||[]).filter(function(s){return s.stage==="admin";}))};
@@ -447,6 +463,24 @@ function loadState(){
   var next=loaded&&Array.isArray(loaded.projects)?loaded:{role:null,userId:null,projects:clone(INITIAL_PROJECTS)};
   INITIAL_PROJECTS.forEach(function(seed){if(!next.projects.some(function(p){return p.id===seed.id;}))next.projects.push(clone(seed));});
   next.settings=Object.assign(clone(DEFAULT_SETTINGS),next.settings||{});
+  next.settings.menuOrder=(next.settings.menuOrder||[]).filter(function(key){return ["dashboard","gallery","schedule","tasks"].indexOf(key)>-1;});
+  DEFAULT_SETTINGS.menuOrder.forEach(function(key){if(next.settings.menuOrder.indexOf(key)<0)next.settings.menuOrder.push(key);});
+  next.workspace=next.workspace||clone(DEFAULT_WORKSPACE);
+  next.workspace.companyHeader=Object.assign(clone(DEFAULT_WORKSPACE.companyHeader),next.workspace.companyHeader||{},
+    {name:(next.workspace.companyHeader&&next.workspace.companyHeader.name)||next.settings.organization||DEFAULT_WORKSPACE.companyHeader.name,
+     banner:(next.workspace.companyHeader&&next.workspace.companyHeader.banner)||next.settings.dashboardImage||DEFAULT_WORKSPACE.companyHeader.banner,
+     welcome:(next.workspace.companyHeader&&next.workspace.companyHeader.welcome)||next.settings.dashboardHeading||DEFAULT_WORKSPACE.companyHeader.welcome,
+     summary:(next.workspace.companyHeader&&next.workspace.companyHeader.summary)||next.settings.dashboardSummary||DEFAULT_WORKSPACE.companyHeader.summary});
+  next.workspace.permissions=Object.assign(clone(DEFAULT_WORKSPACE.permissions),next.workspace.permissions||{});
+  next.workspace.general=Object.assign(clone(DEFAULT_WORKSPACE.general),next.workspace.general||{},
+    {workspaceTitle:(next.workspace.general&&next.workspace.general.workspaceTitle)||next.settings.workspaceTitle||DEFAULT_WORKSPACE.general.workspaceTitle});
+  next.members=Object.assign(clone(INITIAL_MEMBERS),next.members||{});
+  Object.keys(next.members).forEach(function(id){
+    var member=next.members[id],seed=INITIAL_MEMBERS[id]||{};
+    member.name=member.name||seed.name||"Team Member";member.role=member.role||seed.role||"Project Team";member.email=member.email||seed.email||"";
+    member.photo=member.photo||seed.photo||"";member.banner=member.banner||seed.banner||DEFAULT_WORKSPACE.companyHeader.banner;member.welcome=member.welcome||seed.welcome||"Your project workload, clearly organized.";member.initials=initials(member.name);member.workspaceId=member.workspaceId||next.workspace.id;
+  });
+  next.activeWorkspaceId=next.activeWorkspaceId||next.workspace.id;
   next.projects.forEach(normalizeProject);
   return next;
 }
@@ -472,11 +506,28 @@ function projectById(id){return state.projects.find(function(p){return p.id===id
 function stageProgress(project,key){
   return stageCompletion(project,key).percent;
 }
+var NAVIGATION_BY_ROLE={
+  admin:[
+    {label:"",items:[["dashboard","Dashboard","layout-dashboard"],["gallery","Projects","panels-top-left"],["schedule","Schedule","gantt-chart-square"],["tasks","Tasks","list-checks"]]},
+    {label:"TEAM",items:[["members","Members","users"]]},
+    {label:"CONTACTS",items:[["clients","Clients","briefcase-business"],["consultants","Consultants","users-round"],["contractors","Contractors","hard-hat"]]},
+    {label:"FINANCE",items:[["accounting","Accounting","landmark"]]},
+    {label:"DOCUMENTS",items:[["files","Files","folder-open"]]},
+    {label:"SYSTEM",items:[["settings","Admin Settings","settings-2"]]}
+  ],
+  user:[
+    {label:"",items:[["dashboard","Dashboard","layout-dashboard"],["gallery","My Projects","panels-top-left"],["tasks","My Tasks","list-checks"],["schedule","Schedule","gantt-chart-square"],["meetings","Meetings","calendar-clock"],["expenses","Expenses","receipt-text"],["files","Files","folder-open"]]}
+  ]
+};
+var ACCESS_BY_ROLE={admin:["dashboard","gallery","project","schedule","tasks","members","clients","consultants","contractors","company","accounting","files","settings"],user:["dashboard","gallery","project","tasks","schedule","meetings","expenses","files"]};
+function canAccessView(view){return (ACCESS_BY_ROLE[state.role]||[]).indexOf(view)>-1;}
 function setNav(view){document.querySelectorAll(".nav-item[data-view]").forEach(function(b){b.classList.toggle("active",b.dataset.view===view)});}
 function applyWorkspaceSettings(){
-  var settings=state.settings||DEFAULT_SETTINGS,brand=document.querySelector(".sidebar-brand span:last-child strong");
-  if(brand)brand.textContent=settings.organization.split(" ")[0].toUpperCase();
-  document.title=settings.organization.toUpperCase()+" PROJECT HUB";
+  var company=state.workspace.companyHeader,brand=document.querySelector(".sidebar-brand span:last-child strong"),brandMark=document.querySelector(".brand-mark");
+  if(brand)brand.textContent=company.name.split(" ")[0].toUpperCase();
+  if(brandMark)brandMark.innerHTML=company.logo?'<img src="'+esc(company.logo)+'" alt="">':icon("box");
+  document.documentElement.style.setProperty("--workspace-accent",company.accent||DEFAULT_WORKSPACE.companyHeader.accent);
+  document.title=company.name.toUpperCase()+" PROJECT HUB";
 }
 var menuDragKey=null,suppressMenuClickUntil=0;
 function applyMenuOrder(){
@@ -492,6 +543,20 @@ function applyMenuOrder(){
     item.addEventListener("dragend",function(){item.classList.remove("dragging");menuDragKey=null;});
   });
 }
+function bindNavigationEvents(){
+  document.querySelectorAll(".nav-item[data-view]").forEach(function(b){b.addEventListener("click",function(){
+    if(Date.now()<suppressMenuClickUntil||!canAccessView(b.dataset.view))return;
+    currentView=b.dataset.view;currentProjectId=null;currentFilters.high=false;render();document.getElementById("sidebar").classList.remove("open");
+  });});
+}
+function renderRoleNavigation(){
+  var sections=NAVIGATION_BY_ROLE[state.role]||[],html=sections.map(function(section,index){
+    var primary=index===0,items=section.items.slice();
+    if(primary&&state.role==="admin")items.sort(function(a,b){return state.settings.menuOrder.indexOf(a[0])-state.settings.menuOrder.indexOf(b[0]);});
+    return (section.label?'<div class="sidebar-section-label">'+section.label+'</div>':'')+'<nav class="main-nav" aria-label="'+(primary?'Primary':section.label)+'">'+items.map(function(item){return '<button class="nav-item" data-view="'+item[0]+'"'+(primary&&state.role==="admin"?' data-menu-key="'+item[0]+'"':'')+'>'+icon(item[2])+'<span>'+item[1]+'</span></button>';}).join("")+'</nav>';
+  }).join("");
+  document.getElementById("roleNavigation").innerHTML=html;bindNavigationEvents();applyMenuOrder();setNav(currentView);
+}
 function moveMenuItem(key,direction){
   var list=state.settings.menuOrder.slice(),from=list.indexOf(key),to=from+direction;if(from<0||to<0||to>=list.length)return;
   list.splice(from,1);list.splice(to,0,key);state.settings.menuOrder=list;saveState();applyMenuOrder();renderSettingsPage();toast("Menu order saved");
@@ -503,31 +568,31 @@ function startIntro(){
   });
 }
 function applyRoleNavigation(user){
-  var isAdmin=state.role==="admin";
-  document.querySelectorAll(".admin-only").forEach(function(el){el.classList.toggle("hidden",!isAdmin);});
-  var labels={dashboard:isAdmin?"Dashboard":"My Dashboard",gallery:isAdmin?"Projects":"My Projects",schedule:isAdmin?"Project Schedule":"My Schedule",meetings:isAdmin?"Meetings":"My Meetings"};
-  Object.keys(labels).forEach(function(view){var el=document.querySelector('.nav-item[data-view="'+view+'"] span');if(el)el.textContent=labels[view];});
+  renderRoleNavigation();
   document.getElementById("sidebarUserName").textContent=user.name;
   document.getElementById("sidebarRole").textContent=user.role;
   document.getElementById("sidebarInitials").textContent=user.initials;
   var photo=document.getElementById("sidebarPhoto");
   photo.hidden=!user.photo;photo.src=user.photo||"";photo.alt=user.photo?user.name:"";
-  applyWorkspaceSettings();applyMenuOrder();
+  applyWorkspaceSettings();
 }
 function launch(role,userId){
   state.role=role;state.userId=role==="admin"?null:userId;saveState();
   document.getElementById("intro").classList.add("hidden");document.dispatchEvent(new Event("hosis:intro:closed"));document.getElementById("app").classList.remove("hidden");
   adminMemberFilter=null;
-  var user=role==="admin"?{name:"Hosis Admin",role:"Administrator",initials:"HA",photo:""}:USERS[userId];
+  var user=role==="admin"?{name:state.workspace.companyHeader.name+" Admin",role:"Administrator",initials:"HA",photo:""}:USERS[userId];
   applyRoleNavigation(user);
-  document.getElementById("priorityCount").textContent=visibleProjects().filter(function(p){return p.priority==="High"}).length;
   currentView="dashboard";render();
 }
 function render(){
+  if(!canAccessView(currentView)){currentView="dashboard";currentProjectId=null;}
   if(currentView==="project")renderProject(currentProjectId);
-  else if(currentView==="gallery"||currentView==="priority")renderGallery();
+  else if(currentView==="gallery")renderGallery();
   else if(currentView==="schedule")renderSchedulePage();
   else if(currentView==="meetings")renderMeetingsPage();
+  else if(currentView==="tasks")renderTasksPage();
+  else if(currentView==="files")renderFilesPage();
+  else if(currentView==="accounting"||currentView==="expenses")renderDeferredModule(currentView);
   else if(currentView==="members"&&state.role==="admin")renderMembersPage();
   else if(currentView==="settings"&&state.role==="admin")renderSettingsPage();
   else if(DIRECTORIES[currentView]){currentDirectory=currentView;renderDirectory();}
@@ -541,7 +606,8 @@ function memberStats(userId){
   var projects=state.projects.filter(function(p){return p.assigned.indexOf(userId)>-1;}),tasks=[];
   projects.forEach(function(p){p.tasks.forEach(function(t){tasks.push(t);});});
   var today=isoDate(new Date()),week=addDays(today,7);
-  return {projects:projects,open:tasks.filter(function(t){return !t[4];}).length,overdue:tasks.filter(function(t){return !t[4]&&t[2]<today;}).length,dueWeek:tasks.filter(function(t){return !t[4]&&t[2]>=today&&t[2]<=week;}).length};
+  var deadlines=[];projects.forEach(function(p){p.deadlines.forEach(function(d){deadlines.push({project:p,title:d[0],date:d[1],stage:d[2]});});});deadlines.sort(function(a,b){return a.date.localeCompare(b.date);});
+  return {projects:projects,open:tasks.filter(function(t){return !t[4];}).length,overdue:tasks.filter(function(t){return !t[4]&&t[2]<today;}).length,dueWeek:tasks.filter(function(t){return !t[4]&&t[2]>=today&&t[2]<=week;}).length,deadlines:deadlines,upcoming:deadlines.filter(function(d){return d.date>=today;})[0]||null};
 }
 function memberCard(userId,selected){
   var user=USERS[userId],stats=memberStats(userId);
@@ -553,6 +619,8 @@ function renderMemberSwitcher(){
 }
 function bindMemberFilters(){document.querySelectorAll("[data-member-filter]").forEach(function(button){button.addEventListener("click",function(){adminMemberFilter=button.dataset.memberFilter||null;currentFilters.user="";currentFilters.high=false;currentView="dashboard";render();window.scrollTo(0,0);});});}
 function renderDashboard(){
+  var focusId=state.role==="admin"?adminMemberFilter:state.userId;
+  if(focusId){renderMemberWorkspace(focusId);return;}
   var projects=dashboardProjects();
   var high=projects.filter(function(p){return p.priority==="High"}).length;
   var allTasks=[];projects.forEach(function(p){p.tasks.forEach(function(t){allTasks.push(t);});});
@@ -560,36 +628,76 @@ function renderDashboard(){
   var open=allTasks.filter(function(t){return !t[4]}).length;
   var overdue=allTasks.filter(function(t){return !t[4]&&t[2]<today;}).length;
   var dueWeek=allTasks.filter(function(t){return !t[4]&&t[2]>=today&&t[2]<=week;}).length;
-  var focus=state.role==="admin"&&adminMemberFilter?USERS[adminMemberFilter]:state.role==="user"?USERS[state.userId]:null;
-  setHeading(focus?"Members / "+focus.name:"Portfolio / Overview",focus?focus.name+" · Project Workspace":state.settings.workspaceTitle);
+  var company=state.workspace.companyHeader;
+  setHeading("Portfolio / Overview",state.workspace.general.workspaceTitle);
   var stageCounts={};Object.keys(STAGES).forEach(function(k){stageCounts[k]=projects.filter(function(p){return p.scope.indexOf(k)>-1}).length});
-  var html='<section class="hero-strip dashboard-hero" style="--dashboard-image:url(\''+esc(state.settings.dashboardImage)+'\')"><div class="hero-copy"><div class="eyebrow">'+esc(focus?"MEMBER PROJECT WORKSPACE":state.settings.organization.toUpperCase())+'</div><h2>'+esc(focus?focus.name:state.settings.dashboardHeading)+'</h2><p>'+esc(focus?"Every assigned project, task, meeting and deadline in one focused view.":state.settings.dashboardSummary)+'</p></div><div class="hero-actions"><button class="ghost-button" data-go-gallery>'+icon("panels-top-left")+'Open Projects</button><button class="ghost-button" data-go-meetings>'+icon("calendar-clock")+'Meetings</button>'+(state.role==="admin"&&!focus?'<button class="ghost-button" data-edit-workspace>'+icon("pencil")+'Edit header</button>':'')+(adminMemberFilter?'<button class="ghost-button" data-member-filter="">'+icon("users")+'Company View</button>':'')+'</div></section>'+
-    renderMemberSwitcher()+
-    '<section class="stat-grid role-stat-grid">'+statCard("building-2",projects.length,focus?"Assigned Projects":"Active Projects")+statCard("list-checks",open,"Open Tasks")+statCard("calendar-days",dueWeek,"Due This Week")+statCard("clock-alert",overdue,"Overdue Tasks")+(state.role==="admin"&&!focus?statCard("flame",high,"High-Priority Projects"):"")+'</section>'+
+  var html='<section class="hero-strip dashboard-hero company-dashboard-header" style="--dashboard-image:url(\''+esc(company.banner)+'\')"><div class="company-hero-logo">'+(company.logo?'<img src="'+esc(company.logo)+'" alt="'+esc(company.name)+' logo">':icon("building-2"))+'</div><div class="hero-copy"><div class="eyebrow">'+esc(company.name.toUpperCase())+'</div><h2>'+esc(company.welcome)+'</h2><p>'+esc(company.summary)+'</p></div><div class="hero-actions"><button class="ghost-button" data-go-gallery>'+icon("panels-top-left")+'Open Projects</button><button class="ghost-button" data-edit-workspace>'+icon("settings-2")+'Admin Settings</button></div></section>'+
+    '<section class="stat-grid role-stat-grid">'+statCard("building-2",projects.length,"Active Projects")+statCard("list-checks",open,"Open Tasks")+statCard("calendar-days",dueWeek,"Due This Week")+statCard("clock-alert",overdue,"Overdue Tasks")+statCard("flame",high,"High-Priority Projects")+'</section>'+
+    renderTeamOverview()+
     '<div class="dashboard-grid">'+renderDashboardTasks(projects)+'<section class="panel"><div class="panel-head"><h3>Projects by Stage</h3><button data-go-gallery>Filter</button></div><div class="stage-bars">'+Object.keys(STAGES).map(function(k){var pct=projects.length?Math.round(stageCounts[k]/projects.length*100):0;return '<div><div class="stage-bar-head"><span>'+icon(STAGES[k].icon)+' '+esc(STAGES[k].label)+'</span><b>'+stageCounts[k]+'</b></div><div class="stage-track"><div class="stage-fill stage-'+k+'" style="width:'+pct+'%"></div></div></div>'}).join("")+'</div></section></div>'+
-    '<div class="section-title dashboard-project-title"><div><span class="section-kicker">'+esc(focus?"ASSIGNED PORTFOLIO":"ACTIVE PORTFOLIO")+'</span><h2>'+esc(focus?focus.name+"’s Projects":"Projects")+'</h2><p>'+projects.length+' projects in this workspace.</p></div><button class="secondary-button" data-go-gallery>View all projects</button></div><section class="project-grid dashboard-projects">'+projects.map(projectCard).join("")+'</section>'+
+    '<div class="section-title dashboard-project-title"><div><span class="section-kicker">ACTIVE PORTFOLIO</span><h2>Projects</h2><p>'+projects.length+' projects in this workspace.</p></div><button class="secondary-button" data-go-gallery>View all projects</button></div><section class="project-grid dashboard-projects">'+projects.map(projectCard).join("")+'</section>'+
     '<section class="panel timeline-preview dashboard-schedule"><div class="panel-head"><div><h3>Project Schedule</h3><small>Stage dates and overlaps across all visible projects</small></div><button data-go-schedule>Open full timeline</button></div>'+renderTimeline(projects,true)+'</section>'+
     '';
   document.getElementById("content").innerHTML=html;bindDashboardTasks();bindMemberFilters();bindCommon();
   var editWorkspace=document.querySelector("[data-edit-workspace]");if(editWorkspace)editWorkspace.addEventListener("click",function(){openEditor(null,"settings",-1,null);});
 }
 
+function renderTeamOverview(){
+  return '<section class="panel team-overview"><div class="panel-head"><div><span class="section-kicker">TEAM OVERVIEW</span><h3>Workload across the studio</h3><small>Select a member to open their complete workspace.</small></div><button data-open-members>Manage members</button></div><div class="team-overview-head"><span>Member</span><span>Active Projects</span><span>Open Tasks</span><span>Overdue Tasks</span></div><div class="team-overview-list">'+Object.keys(USERS).map(function(id){var user=USERS[id],stats=memberStats(id);return '<button class="team-overview-row" data-member-filter="'+id+'"><span class="team-person"><span class="member-photo"><img src="'+esc(user.photo)+'" alt=""></span><span><strong>'+esc(user.name)+'</strong><small>'+esc(user.role)+'</small></span></span><b>'+stats.projects.length+'</b><b>'+stats.open+'</b><b class="'+(stats.overdue?'metric-alert':'')+'">'+stats.overdue+'</b></button>';}).join("")+'</div></section>';
+}
+function renderMemberWorkspace(userId){
+  var member=USERS[userId];if(!member){adminMemberFilter=null;renderDashboard();return;}
+  var stats=memberStats(userId),projects=stats.projects,meetings=[],activity=[];
+  projects.forEach(function(p){p.meetings.forEach(function(m){meetings.push({project:p,meeting:m});});p.activity.forEach(function(a){activity.push({project:p,item:a});});});
+  meetings.sort(function(a,b){return (b.meeting.date+b.meeting.time).localeCompare(a.meeting.date+a.meeting.time);});
+  setHeading(state.role==="admin"?"Members / "+member.name:"My Workspace",member.name+" · Personal Workspace");
+  var canSelfEdit=state.role==="user"&&(state.workspace.permissions.memberCanEditPhoto||state.workspace.permissions.memberCanEditBanner);
+  var html='<section class="member-personal-header" style="--member-banner:url(\''+esc(member.banner)+'\')"><div class="member-header-profile"><span class="member-header-photo"><img src="'+esc(member.photo)+'" alt="'+esc(member.name)+'"></span><div><span class="section-kicker">MEMBER WORKSPACE</span><h2>Welcome, '+esc(member.name.split(" ")[0])+'</h2><strong>'+esc(member.name)+'</strong><p>'+esc(member.role)+' · '+esc(member.welcome)+'</p></div></div><div class="hero-actions">'+(state.role==="admin"?'<button class="ghost-button" data-edit-member="'+userId+'">'+icon("pencil")+'Edit profile</button><button class="ghost-button" data-member-filter="">'+icon("building-2")+'Company View</button>':canSelfEdit?'<button class="ghost-button" data-edit-self>'+icon("image")+'Edit my images</button>':'')+'</div></section>'+
+    '<section class="stat-grid role-stat-grid">'+statCard("building-2",projects.length,"My Projects")+statCard("list-checks",stats.open,"Open Tasks")+statCard("calendar-days",stats.dueWeek,"Due This Week")+statCard("clock-alert",stats.overdue,"Overdue Tasks")+'</section>'+
+    '<div class="member-primary-section"><div class="section-title compact"><div><span class="section-kicker">PRIMARY WORKLOAD</span><h2>My Tasks Across All Projects</h2><p>Every open commitment from all assigned projects, ordered by priority and due date.</p></div></div>'+renderDashboardTasks(projects,"My Tasks Across All Projects")+'</div>'+
+    '<div class="member-workspace-grid">'+renderMemberDeadlines(stats.deadlines)+renderMemberMeetings(meetings)+renderMemberActivity(activity)+'</div>'+
+    '<div class="section-title dashboard-project-title"><div><span class="section-kicker">ASSIGNED PORTFOLIO</span><h2>My Projects</h2><p>'+projects.length+' projects assigned to '+esc(member.name)+'.</p></div><button class="secondary-button" data-go-gallery>View all</button></div><section class="project-grid dashboard-projects">'+projects.map(projectCard).join("")+'</section>'+
+    '<section class="panel timeline-preview dashboard-schedule"><div class="panel-head"><div><h3>My Schedule</h3><small>Stage dates across all assigned projects</small></div><button data-go-schedule>Open full schedule</button></div>'+renderTimeline(projects,true)+'</section>';
+  document.getElementById("content").innerHTML=html;bindDashboardTasks();bindMemberFilters();bindCommon();
+  document.querySelectorAll("[data-edit-member]").forEach(function(b){b.addEventListener("click",function(){openEditor(null,"memberProfile",-1,b.dataset.editMember);});});
+  var self=document.querySelector("[data-edit-self]");if(self)self.addEventListener("click",function(){openEditor(null,"memberSelf",-1,userId);});
+}
+function renderMemberDeadlines(deadlines){
+  var today=isoDate(new Date()),upcoming=deadlines.filter(function(d){return d.date>=today;}).sort(function(a,b){return a.date.localeCompare(b.date);}).slice(0,6);
+  return '<section class="panel member-summary-panel"><div class="panel-head"><div><h3>My Deadlines</h3><small>Upcoming dates across assigned projects</small></div>'+icon("calendar-days")+'</div><div class="summary-list">'+(upcoming.length?upcoming.map(function(d){return '<button data-project="'+d.project.id+'"><span><strong>'+esc(d.title)+'</strong><small>'+esc(d.project.number+' · '+d.project.name)+'</small></span><time>'+formatDate(d.date)+'</time></button>';}).join(""):'<p class="inline-empty">No deadlines recorded.</p>')+'</div></section>';
+}
+function renderMemberMeetings(rows){
+  return '<section class="panel member-summary-panel"><div class="panel-head"><div><h3>My Meetings</h3><small>Recent and upcoming project coordination</small></div>'+icon("calendar-clock")+'</div><div class="summary-list">'+(rows.length?rows.slice(0,6).map(function(row){return '<button data-project="'+row.project.id+'"><span><strong>'+esc(row.meeting.title)+'</strong><small>'+esc(row.project.number+' · '+row.meeting.location)+'</small></span><time>'+formatDate(row.meeting.date)+'</time></button>';}).join(""):'<p class="inline-empty">No meetings recorded.</p>')+'</div></section>';
+}
+function renderMemberActivity(rows){
+  return '<section class="panel member-summary-panel"><div class="panel-head"><div><h3>My Recent Activity</h3><small>Latest updates from assigned projects</small></div>'+icon("activity")+'</div><div class="summary-list activity-summary">'+(rows.length?rows.slice(0,6).map(function(row){return '<button data-project="'+row.project.id+'"><span><strong>'+esc(row.item[0])+'</strong><small>'+esc(row.project.number+' · '+stageLabel(row.item[2]))+'</small></span><time>'+esc(row.item[1])+'</time></button>';}).join(""):'<p class="inline-empty">No recent activity.</p>')+'</div></section>';
+}
+
 function renderSettingsPage(){
-  setHeading("Admin / Workspace","Header & Branding");
-  var s=state.settings;
-  var labels={dashboard:"Dashboard",gallery:"Projects",schedule:"Project Schedule",meetings:"Meetings",priority:"High Priority"};
-  document.getElementById("content").innerHTML='<div class="section-title"><div><span class="section-kicker">ADMIN CONTROL</span><h2>Header & Branding</h2><p>Edit the dashboard header, organization name and image shown to every member.</p></div><button class="primary-button" data-edit-workspace>'+icon("pencil")+' Edit workspace header</button></div><section class="brand-preview dashboard-hero" style="--dashboard-image:url(\''+esc(s.dashboardImage)+'\')"><div class="hero-copy"><div class="eyebrow">'+esc(s.organization.toUpperCase())+'</div><h2>'+esc(s.dashboardHeading)+'</h2><p>'+esc(s.dashboardSummary)+'</p></div></section><section class="panel settings-note"><h3>Admin-controlled content</h3><p>Project cover images remain editable from each project’s <b>Edit Project</b> control. Member photos and organization-level branding are kept separate.</p><div class="drag-instruction">'+icon("grip-vertical")+' Drag the primary sidebar items, or use the buttons below. Both methods save the same menu order.</div><div class="menu-order-list">'+s.menuOrder.map(function(key,index){return '<div><span>'+icon("grip-vertical")+esc(labels[key])+'</span><div><button data-move-menu="'+key+'" data-direction="-1" aria-label="Move '+esc(labels[key])+' up" '+(index===0?'disabled':'')+'>'+icon("arrow-up")+'</button><button data-move-menu="'+key+'" data-direction="1" aria-label="Move '+esc(labels[key])+' down" '+(index===s.menuOrder.length-1?'disabled':'')+'>'+icon("arrow-down")+'</button></div></div>';}).join("")+'</div></section>';
+  setHeading("System / Admin Settings","Admin Settings");
+  var company=state.workspace.companyHeader,s=state.settings,labels={dashboard:"Dashboard",gallery:"Projects",schedule:"Schedule",tasks:"Tasks"};
+  var companyRecords=[];state.projects.forEach(function(project){project.companies.forEach(function(record,index){if(record.name&&!companyRecords.some(function(x){return x.record.name===record.name;}))companyRecords.push({project:project,record:record,index:index});});});
+  document.getElementById("content").innerHTML='<div class="section-title settings-title"><div><span class="section-kicker">SYSTEM</span><h2>Admin Settings</h2><p>One central place for workspace identity, member profiles and general permissions. Structured for additional settings later.</p></div></div>'+
+    '<nav class="settings-index" aria-label="Settings sections"><a href="#companySettings">'+icon("building-2")+'Company</a><a href="#memberSettings">'+icon("users")+'Members</a><a href="#logoSettings">'+icon("badge")+'Company Logos</a><a href="#generalSettings">'+icon("sliders-horizontal")+'General</a></nav>'+
+    '<section id="companySettings" class="settings-section"><div class="settings-section-head"><div><span class="settings-icon">'+icon("building-2")+'</span><div><h3>Company Header & Branding</h3><p>Admin-only workspace identity. This never changes a member’s personal header.</p></div></div><button class="primary-button" data-edit-workspace>'+icon("pencil")+'Edit company branding</button></div><div class="brand-preview dashboard-hero" style="--dashboard-image:url(\''+esc(company.banner)+'\')"><div class="company-hero-logo">'+(company.logo?'<img src="'+esc(company.logo)+'" alt="">':icon("building-2"))+'</div><div class="hero-copy"><div class="eyebrow">'+esc(company.name.toUpperCase())+'</div><h2>'+esc(company.welcome)+'</h2><p>'+esc(company.summary)+'</p></div></div></section>'+
+    '<section id="memberSettings" class="settings-section"><div class="settings-section-head"><div><span class="settings-icon">'+icon("users")+'</span><div><h3>Member Profiles & Personal Headers</h3><p>Edit profile images, personal banners, names, job titles and welcome text.</p></div></div></div><div class="settings-member-grid">'+Object.keys(USERS).map(function(id){var m=USERS[id];return '<article class="settings-member-card"><img src="'+esc(m.photo)+'" alt=""><div><strong>'+esc(m.name)+'</strong><small>'+esc(m.role)+'</small><span>'+esc(m.email)+'</span></div><button data-edit-member="'+id+'" aria-label="Edit '+esc(m.name)+'">'+icon("pencil")+'Edit</button></article>';}).join("")+'</div></section>'+
+    '<section id="logoSettings" class="settings-section"><div class="settings-section-head"><div><span class="settings-icon">'+icon("badge")+'</span><div><h3>Client & Company Logos</h3><p>Logos remain linked to their project company records so future workspace data stays isolated.</p></div></div></div><div class="company-logo-settings">'+companyRecords.slice(0,12).map(function(x){return '<article><div class="company-logo">'+(x.record.logo?'<img src="'+esc(x.record.logo)+'" alt="">':'<span>'+esc(initials(x.record.name))+'</span>')+'</div><span><strong>'+esc(x.record.name)+'</strong><small>'+esc(x.record.category+' · '+x.project.number)+'</small></span><button data-company-logo="'+x.project.id+'" data-company-index="'+x.index+'" aria-label="Edit '+esc(x.record.name)+' logo">'+icon("image")+'Logo</button></article>';}).join("")+'</div></section>'+
+    '<section id="generalSettings" class="settings-section"><div class="settings-section-head"><div><span class="settings-icon">'+icon("sliders-horizontal")+'</span><div><h3>General Workspace Settings</h3><p>Workspace-level permissions and navigation layout. Members cannot change these controls.</p></div></div><button class="secondary-button" data-edit-general>'+icon("settings-2")+'Edit general settings</button></div><div class="settings-permissions"><span><b>Member profile image editing</b><small>'+(state.workspace.permissions.memberCanEditPhoto?'Allowed':'Admin only')+'</small></span><span><b>Member banner editing</b><small>'+(state.workspace.permissions.memberCanEditBanner?'Allowed':'Admin only')+'</small></span><span><b>Workspace ID</b><small>'+esc(state.workspace.id)+'</small></span></div><div class="drag-instruction">'+icon("grip-vertical")+' Admin can reorder the primary navigation. Member navigation remains role-controlled.</div><div class="menu-order-list">'+s.menuOrder.map(function(key,index){return '<div><span>'+icon("grip-vertical")+esc(labels[key])+'</span><div><button data-move-menu="'+key+'" data-direction="-1" aria-label="Move '+esc(labels[key])+' up" '+(index===0?'disabled':'')+'>'+icon("arrow-up")+'</button><button data-move-menu="'+key+'" data-direction="1" aria-label="Move '+esc(labels[key])+' down" '+(index===s.menuOrder.length-1?'disabled':'')+'>'+icon("arrow-down")+'</button></div></div>';}).join("")+'</div><div class="settings-danger"><div><strong>Reset demo workspace</strong><small>Restore the original Hosis projects, members and workspace settings.</small></div><button class="secondary-button" data-reset-demo>'+icon("rotate-ccw")+'Reset demo data</button></div></section>';
   document.querySelector("[data-edit-workspace]").addEventListener("click",function(){openEditor(null,"settings",-1,null);});
+  document.querySelectorAll("[data-edit-member]").forEach(function(button){button.addEventListener("click",function(){openEditor(null,"memberProfile",-1,button.dataset.editMember);});});
+  document.querySelectorAll("[data-company-logo]").forEach(function(button){button.addEventListener("click",function(){openEditor(projectById(button.dataset.companyLogo),"companyLogo",Number(button.dataset.companyIndex),null);});});
+  document.querySelector("[data-edit-general]").addEventListener("click",function(){openEditor(null,"workspaceGeneral",-1,null);});
+  document.querySelector("[data-reset-demo]").addEventListener("click",resetDemoData);
   document.querySelectorAll("[data-move-menu]").forEach(function(button){button.addEventListener("click",function(){moveMenuItem(button.dataset.moveMenu,Number(button.dataset.direction));});});refreshIcons();
 }
 var showCompletedTasks=false;
-function renderDashboardTasks(projects){
+function renderDashboardTasks(projects,title){
   var rank={High:0,Medium:1,Low:2},tasks=[];
   projects.forEach(function(p){p.tasks.forEach(function(t){tasks.push({project:p,task:t});});});
   tasks.sort(function(a,b){return (rank[a.task[3]]==null?3:rank[a.task[3]])-(rank[b.task[3]]==null?3:rank[b.task[3]])||(a.task[2]||"9999").localeCompare(b.task[2]||"9999")||a.task[1].localeCompare(b.task[1]);});
   var open=tasks.filter(function(x){return !x.task[4];}),done=tasks.filter(function(x){return x.task[4];});
   function row(x){var p=x.project,t=x.task;return '<div class="task-row dashboard-task'+(t[4]?' done':'')+'" data-priority="'+esc(t[3])+'"><button class="task-check" data-dashboard-task="'+esc(t[0])+'" data-task-project="'+esc(p.id)+'" aria-label="'+esc((t[4]?'Reopen ':'Complete ')+t[1])+'" aria-pressed="'+!!t[4]+'">'+(t[4]?icon('check'):'')+'</button><div class="dashboard-task-copy"><strong>'+esc(t[1])+'</strong><button class="task-project-link" data-project="'+esc(p.id)+'">'+esc(p.number+' · '+p.name)+'</button><small>Due '+esc(formatDate(t[2]))+'</small></div><span class="pill '+priorityClass(t[3])+'">'+esc(t[3])+'</span></div>';}
-  return '<section class="panel dashboard-tasks" aria-labelledby="dashboardTasksTitle"><div class="panel-head"><div><h3 id="dashboardTasksTitle">Project Tasks</h3><small>'+open.length+' open · High, Medium, Low · Earliest due first</small></div>'+icon('list-checks')+'</div><div class="task-list open-task-list">'+(open.length?open.map(row).join(''):'<p class="directory-empty">All caught up. No open tasks in your visible projects.</p>')+'</div>'+(done.length?'<details class="completed-tasks"'+(showCompletedTasks?' open':'')+'><summary>Completed tasks ('+done.length+')</summary><div class="task-list">'+done.map(row).join('')+'</div></details>':'')+'</section>';
+  return '<section class="panel dashboard-tasks" aria-labelledby="dashboardTasksTitle"><div class="panel-head"><div><h3 id="dashboardTasksTitle">'+esc(title||"Project Tasks")+'</h3><small>'+open.length+' open · High, Medium, Low · Earliest due first</small></div>'+icon('list-checks')+'</div><div class="task-list open-task-list">'+(open.length?open.map(row).join(''):'<p class="directory-empty">All caught up. No open tasks in your visible projects.</p>')+'</div>'+(done.length?'<details class="completed-tasks"'+(showCompletedTasks?' open':'')+'><summary>Completed tasks ('+done.length+')</summary><div class="task-list">'+done.map(row).join('')+'</div></details>':'')+'</section>';
 }
 function bindDashboardTasks(){
   var completed=document.querySelector('.completed-tasks');
@@ -598,11 +706,30 @@ function bindDashboardTasks(){
     var p=visibleProjects().find(function(x){return x.id===b.dataset.taskProject;});
     var task=p&&p.tasks.find(function(t){return t[0]===b.dataset.dashboardTask;});
     if(!task)return;
-    task[4]=!task[4];if(task[4])showCompletedTasks=true;saveState();renderDashboard();refreshIcons();
+    task[4]=!task[4];if(task[4])showCompletedTasks=true;saveState();render();refreshIcons();
     var next=Array.from(document.querySelectorAll('[data-dashboard-task]')).find(function(el){return el.dataset.taskProject===p.id&&el.dataset.dashboardTask===task[0];});
     if(next)next.focus({preventScroll:true});
     toast(task[4]?'Task marked complete':'Task reopened');
   });});
+}
+
+function renderTasksPage(){
+  var projects=workspaceProjects(),member=state.role==="user"?USERS[state.userId]:null;
+  setHeading(state.role==="admin"?"Portfolio / Tasks":"My Workspace / Tasks",state.role==="admin"?"Tasks":"My Tasks");
+  document.getElementById("content").innerHTML='<div class="section-title"><div><span class="section-kicker">'+(member?'PERSONAL WORKLOAD':'PORTFOLIO WORKLOAD')+'</span><h2>'+(member?'My Tasks Across All Projects':'Tasks Across All Projects')+'</h2><p>One prioritized list across '+projects.length+' visible projects.</p></div></div>'+renderDashboardTasks(projects,member?'My Tasks Across All Projects':'Portfolio Tasks');
+  bindDashboardTasks();bindCommon();
+}
+function renderFilesPage(){
+  var projects=workspaceProjects(),rows=[];projects.forEach(function(project){project.documents.forEach(function(document){rows.push({project:project,document:document});});});
+  setHeading(state.role==="admin"?"Documents / Files":"My Workspace / Files",state.role==="admin"?"Files":"My Files");
+  document.getElementById("content").innerHTML='<div class="section-title"><div><span class="section-kicker">DOCUMENTS</span><h2>'+(state.role==="admin"?'Workspace Files':'My Files')+'</h2><p>Documents aggregated from every '+(state.role==="admin"?'workspace':'assigned')+' project.</p></div><span class="directory-count">'+rows.length+' files</span></div><section class="panel files-register"><div class="files-register-head"><span>Document</span><span>Project</span><span>Stage</span><span>Type / Size</span></div>'+(rows.length?rows.map(function(row){return '<button class="files-register-row" data-project="'+row.project.id+'"><span>'+icon("file-text")+'<strong>'+esc(row.document[0])+'</strong></span><span>'+esc(row.project.number+' · '+row.project.name)+'</span><span>'+esc(stageLabel(row.document[1]))+'</span><span>'+esc(row.document[2])+icon("arrow-up-right")+'</span></button>';}).join(""):'<p class="directory-empty">No files are available in the visible projects.</p>')+'</section>';
+  bindCommon();
+}
+function renderDeferredModule(view){
+  var isExpenses=view==="expenses",title=isExpenses?"Expenses":"Accounting";
+  setHeading((isExpenses?"My Workspace":"Finance")+" / "+title,title);
+  document.getElementById("content").innerHTML='<section class="deferred-module panel"><span class="deferred-icon">'+icon(isExpenses?"receipt-text":"landmark")+'</span><span class="section-kicker">PHASE 2</span><h2>'+title+'</h2><p>This navigation is role-ready, but the full '+title.toLowerCase()+' system is intentionally reserved for Phase 2. No placeholder financial data has been added.</p><button class="secondary-button" data-view-return>'+icon("arrow-left")+'Return to dashboard</button></section>';
+  document.querySelector("[data-view-return]").addEventListener("click",function(){currentView="dashboard";render();});
 }
 
 function meetingActionState(project,action){var task=project.tasks.find(function(t){return t[0]===action.taskId;});return task||[action.taskId,action.title,action.due,action.priority,false];}
@@ -623,9 +750,9 @@ function renderMeetingsPage(){
   document.getElementById("content").innerHTML=html;bindCommon();
 }
 function renderMembersPage(){
-  setHeading("Workspace / Members","Members & Workload");
-  var html='<div class="section-title members-title"><div><span class="section-kicker">TEAM WORKSPACES</span><h2>Members</h2><p>Open a member workspace to review every assigned project, task, deadline and meeting.</p></div><button class="secondary-button" data-member-filter="">'+icon("building-2")+'Company Dashboard</button></div><section class="members-page-grid">'+Object.keys(USERS).map(function(id){var user=USERS[id],stats=memberStats(id);return '<article class="member-profile-card"><img src="'+esc(user.photo)+'" alt="'+esc(user.name)+'"><div><span class="section-kicker">'+esc(user.role)+'</span><h3>'+esc(user.name)+'</h3><div class="member-metrics"><span><b>'+stats.projects.length+'</b>Projects</span><span><b>'+stats.open+'</b>Open Tasks</span><span><b>'+stats.dueWeek+'</b>Due This Week</span><span><b>'+stats.overdue+'</b>Overdue</span></div><button class="primary-button" data-member-filter="'+id+'">Open '+esc(user.name.split(" ")[0])+"’s workspace"+icon("arrow-right")+'</button></div></article>';}).join("")+'</section>';
-  document.getElementById("content").innerHTML=html;bindMemberFilters();refreshIcons();
+  setHeading("Team / Members","Members & Workload");
+  var html='<div class="section-title members-title"><div><span class="section-kicker">TEAM MANAGEMENT</span><h2>Members</h2><p>Review capacity and open a personal workspace with all assigned projects, tasks, meetings and deadlines.</p></div><span class="directory-count">'+Object.keys(USERS).length+' active members</span></div><section class="panel members-management"><div class="members-table-head"><span>Member</span><span>Active Projects</span><span>Open Tasks</span><span>Overdue</span><span>Upcoming Deadline</span><span></span></div>'+Object.keys(USERS).map(function(id){var user=USERS[id],stats=memberStats(id);return '<article class="members-table-row"><button class="member-identity" data-member-filter="'+id+'"><img src="'+esc(user.photo)+'" alt=""><span><strong>'+esc(user.name)+'</strong><small>'+esc(user.role)+'</small><em>'+esc(user.email)+'</em></span></button><b>'+stats.projects.length+'</b><b>'+stats.open+'</b><b class="'+(stats.overdue?'metric-alert':'')+'">'+stats.overdue+'</b><span class="upcoming-deadline">'+(stats.upcoming?'<strong>'+esc(stats.upcoming.title)+'</strong><small>'+formatDate(stats.upcoming.date)+' · '+esc(stats.upcoming.project.number)+'</small>':'<small>No upcoming deadline</small>')+'</span><span class="member-row-actions"><button data-edit-member="'+id+'" aria-label="Edit '+esc(user.name)+'">'+icon("pencil")+'</button><button data-member-filter="'+id+'" aria-label="Open '+esc(user.name)+' workspace">'+icon("arrow-right")+'</button></span></article>';}).join("")+'</section>';
+  document.getElementById("content").innerHTML=html;bindMemberFilters();document.querySelectorAll("[data-edit-member]").forEach(function(button){button.addEventListener("click",function(){openEditor(null,"memberProfile",-1,button.dataset.editMember);});});refreshIcons();
 }
 
 var DIRECTORIES={
@@ -785,7 +912,7 @@ function renderProject(id){
   if(state.role==="admin")document.getElementById("projectNotes").addEventListener("input",function(e){p.notes=e.target.value;saveState();document.querySelector('.notes-box .save-hint').textContent="All changes saved in this browser.";});
   if(state.role==="admin"){
     document.getElementById("statusSelect").addEventListener("change",function(e){p.status=e.target.value;saveState();renderProject(p.id);toast("Project status updated")});
-    document.getElementById("prioritySelect").addEventListener("change",function(e){p.priority=e.target.value.split(" ")[0];saveState();document.getElementById("priorityCount").textContent=visibleProjects().filter(function(x){return x.priority==="High"}).length;renderProject(p.id);toast("Project priority updated")});
+    document.getElementById("prioritySelect").addEventListener("change",function(e){p.priority=e.target.value.split(" ")[0];saveState();renderProject(p.id);toast("Project priority updated")});
     document.getElementById("editScope").addEventListener("click",function(){openScope(p.id)});
     document.getElementById("editScopeInline").addEventListener("click",function(){openScope(p.id)});
     document.querySelectorAll("[data-shift-schedule]").forEach(function(button){button.addEventListener("click",function(){var item=p.schedule[Number(button.dataset.shiftSchedule)],days=Number(button.dataset.days);item.start=addDays(item.start,days);item.end=addDays(item.end,days);saveState();renderProject(p.id);toast(stageLabel(item.stage)+" shifted "+Math.abs(days)+" days");});});
@@ -834,9 +961,23 @@ function renderStageContent(project,key){
 
 function editorConfig(project,kind,index,stageKey){
   var creating=index<0,item;
-  if(kind==="settings")return {title:"Edit Workspace Header",description:"These values control the shared dashboard header. Use a secure HTTPS image URL.",fields:[
-    {name:"organization",label:"Organization Name",value:state.settings.organization},{name:"workspaceTitle",label:"Top Header Title",value:state.settings.workspaceTitle,wide:true},{name:"dashboardHeading",label:"Dashboard Heading",value:state.settings.dashboardHeading,wide:true},{name:"dashboardSummary",label:"Dashboard Summary",type:"textarea",value:state.settings.dashboardSummary,wide:true},{name:"dashboardImage",label:"Header Image URL",type:"url",value:state.settings.dashboardImage,wide:true}
-  ],validate:function(v){return /^https:\/\/\S+$/i.test(v.dashboardImage)?"":"Use an HTTPS image URL for the header.";},save:function(v){Object.assign(state.settings,v);applyWorkspaceSettings();}};
+  if(kind==="settings")return {title:"Edit Company Header & Branding",description:"Admin-only company identity. Member personal headers are stored separately.",fields:[
+    {name:"name",label:"Company Name",value:state.workspace.companyHeader.name},{name:"logo",label:"Company Logo URL",type:"url",value:state.workspace.companyHeader.logo,required:false},{name:"welcome",label:"Company Welcome Text",value:state.workspace.companyHeader.welcome,wide:true},{name:"summary",label:"Dashboard Header Summary",type:"textarea",value:state.workspace.companyHeader.summary,wide:true},{name:"banner",label:"Dashboard Banner Image URL",type:"url",value:state.workspace.companyHeader.banner,wide:true},{name:"accent",label:"Brand Accent",type:"color",value:state.workspace.companyHeader.accent}
+  ],validate:function(v){return (!v.logo||/^https:\/\/\S+$/i.test(v.logo))&&/^https:\/\/\S+$/i.test(v.banner)?"":"Use secure HTTPS image URLs for the logo and banner.";},save:function(v){Object.assign(state.workspace.companyHeader,v);state.settings.organization=v.name;state.settings.dashboardHeading=v.welcome;state.settings.dashboardSummary=v.summary;state.settings.dashboardImage=v.banner;applyWorkspaceSettings();document.getElementById("sidebarUserName").textContent=v.name+" Admin";renderRoleNavigation();}};
+  if(kind==="memberProfile"){
+    item=USERS[stageKey];if(!item)return null;
+    return {title:"Edit "+item.name,description:"Admin can manage this member’s identity and personal header without changing company branding.",fields:[{name:"name",label:"Display Name",value:item.name},{name:"role",label:"Job Title",value:item.role},{name:"email",label:"Email",type:"email",value:item.email},{name:"photo",label:"Profile Image URL",type:"url",value:item.photo,wide:true},{name:"banner",label:"Personal Header Image URL",type:"url",value:item.banner,wide:true},{name:"welcome",label:"Personal Welcome Text",type:"textarea",value:item.welcome,wide:true}],validate:function(v){return /^https:\/\/\S+$/i.test(v.photo)&&/^https:\/\/\S+$/i.test(v.banner)?"":"Use secure HTTPS image URLs for the profile and banner.";},save:function(v){Object.assign(item,v);item.initials=initials(item.name);}};
+  }
+  if(kind==="memberSelf"){
+    item=USERS[stageKey];if(!item||state.userId!==stageKey)return null;
+    var selfFields=[];if(state.workspace.permissions.memberCanEditPhoto)selfFields.push({name:"photo",label:"My Profile Image URL",type:"url",value:item.photo,wide:true});if(state.workspace.permissions.memberCanEditBanner)selfFields.push({name:"banner",label:"My Personal Header Image URL",type:"url",value:item.banner,wide:true});
+    return {title:"Edit My Header Images",description:"These images belong only to your personal workspace. Company branding remains admin-controlled.",fields:selfFields,validate:function(v){return Object.keys(v).every(function(key){return /^https:\/\/\S+$/i.test(v[key]);})?"":"Use secure HTTPS image URLs.";},save:function(v){Object.assign(item,v);applyRoleNavigation(item);}};
+  }
+  if(kind==="workspaceGeneral")return {title:"General Workspace Settings",description:"Permissions and workspace-wide defaults. These controls are available to admins only.",fields:[{name:"workspaceTitle",label:"Application Header Title",value:state.workspace.general.workspaceTitle,wide:true},{name:"timezone",label:"Workspace Timezone",value:state.workspace.general.timezone},{name:"dateFormat",label:"Date Format",value:state.workspace.general.dateFormat},{name:"memberCanEditPhoto",label:"Members may edit their own profile image",type:"checkbox",value:state.workspace.permissions.memberCanEditPhoto},{name:"memberCanEditBanner",label:"Members may edit their own personal banner",type:"checkbox",value:state.workspace.permissions.memberCanEditBanner}],save:function(v){state.workspace.general.workspaceTitle=v.workspaceTitle;state.workspace.general.timezone=v.timezone;state.workspace.general.dateFormat=v.dateFormat;state.workspace.permissions.memberCanEditPhoto=v.memberCanEditPhoto;state.workspace.permissions.memberCanEditBanner=v.memberCanEditBanner;state.settings.workspaceTitle=v.workspaceTitle;}};
+  if(kind==="companyLogo"){
+    item=project&&project.companies[index];if(!item)return null;
+    return {title:"Edit "+item.name+" Logo",description:"This logo stays attached to the company record inside "+project.number+".",fields:[{name:"logo",label:"Company Logo URL",type:"url",value:item.logo||"",wide:true,required:false}],validate:function(v){return !v.logo||/^https:\/\/\S+$/i.test(v.logo)?"":"Use a secure HTTPS image URL.";},save:function(v){item.logo=v.logo;}};
+  }
   function stageChoices(){return project.scope.map(function(k){return [k,stageLabel(k)]});}
   if(kind==="project")return {title:"Edit Project Information",description:"Update overview, access and the project image.",fields:[
     {name:"number",label:"Project Number",value:project.number},{name:"name",label:"Project Name",value:project.name},{name:"address",label:"Address",value:project.address},{name:"type",label:"Project Type",value:project.type},{name:"area",label:"Project Area",value:project.area},{name:"client",label:"Client",value:project.client},{name:"owner",label:"Owner",value:project.owner},{name:"contractor",label:"General Contractor",value:project.contractor},{name:"status",label:"Current Status",value:project.status},{name:"priority",label:"Priority",type:"select",options:[["High","High"],["Medium","Medium"],["Low","Low"]],value:project.priority},{name:"image",label:"Project Image URL",value:project.image,wide:true},{name:"summary",label:"Project Scope Summary",type:"textarea",value:project.summary,wide:true},{name:"assigned",label:"Assigned Users",type:"checks",options:Object.keys(USERS).map(function(k){return [k,USERS[k].name]}),value:project.assigned,wide:true}
@@ -926,8 +1067,10 @@ function fieldHtml(field){
   return '<label class="'+cls+'"><span>'+esc(field.label)+'</span><input name="'+field.name+'" type="'+(field.type||'text')+'" value="'+esc(field.value)+'"'+(field.required===false?'':' required')+'></label>';
 }
 function openEditor(project,kind,index,stageKey){
-  if(state.role!=="admin")return;var cfg=editorConfig(project,kind,index,stageKey);if(!cfg)return;
+  var selfEdit=kind==="memberSelf"&&state.role==="user"&&state.userId===stageKey;
+  if(state.role!=="admin"&&!selfEdit)return;var cfg=editorConfig(project,kind,index,stageKey);if(!cfg)return;
   editContext={project:project,kind:kind,index:index,stageKey:stageKey,config:cfg};
+  document.querySelector("#editModal .eyebrow").textContent=selfEdit?"PROFILE EDITOR":"ADMIN EDITOR";
   document.getElementById("editModalTitle").textContent=cfg.title;document.getElementById("editModalDescription").textContent=cfg.description||"Changes are saved locally in this browser.";
   document.getElementById("editFields").innerHTML=cfg.fields.map(fieldHtml).join("");document.getElementById("editModal").classList.remove("hidden");refreshIcons();
 }
@@ -936,7 +1079,7 @@ function saveEditor(form){
   if(!editContext)return;var data=new FormData(form),values={};
   editContext.config.fields.forEach(function(f){if(f.type==="checks")values[f.name]=data.getAll(f.name);else if(f.type==="checkbox")values[f.name]=data.has(f.name);else values[f.name]=data.get(f.name)});
   var error=editContext.config.validate?editContext.config.validate(values):"";if(error){toast(error);return}
-  editContext.config.save(values);saveState();var project=editContext.project,kind=editContext.kind;closeEditor();if(project)renderProject(project.id);else if(kind==="settings")renderSettingsPage();toast("Changes saved");
+  editContext.config.save(values);saveState();var project=editContext.project,kind=editContext.kind;if(kind==="memberProfile")populateWelcomeUsers();closeEditor();if(kind==="companyLogo"||kind==="settings"||kind==="workspaceGeneral")renderSettingsPage();else if(kind==="memberProfile"){if(currentView==="members")renderMembersPage();else if(currentView==="settings")renderSettingsPage();else renderDashboard();}else if(kind==="memberSelf")renderDashboard();else if(project)renderProject(project.id);toast("Changes saved");
 }
 function deleteRecord(project,kind,index,stageKey){
   if(!confirm("Delete this record?"))return;
@@ -1016,20 +1159,27 @@ function bindCommon(){
   document.querySelectorAll("[data-go-schedule]").forEach(function(b){b.addEventListener("click",function(){currentView="schedule";currentProjectId=null;render()})});
   document.querySelectorAll("[data-go-meetings]").forEach(function(b){b.addEventListener("click",function(){currentView="meetings";currentProjectId=null;render()})});
   document.querySelectorAll("[data-open-ai]").forEach(function(b){b.addEventListener("click",openAi)});
+  document.querySelectorAll("[data-open-members]").forEach(function(b){b.addEventListener("click",function(){if(state.role!=="admin")return;currentView="members";render();});});
   bindProjectCards();
+}
+function resetDemoData(){
+  if(!confirm("Reset all prototype edits saved in this browser?"))return;
+  state={role:state.role,userId:state.userId,projects:clone(INITIAL_PROJECTS),settings:clone(DEFAULT_SETTINGS),workspace:clone(DEFAULT_WORKSPACE),members:clone(INITIAL_MEMBERS)};
+  USERS=state.members;state.projects.forEach(normalizeProject);saveState();applyWorkspaceSettings();renderRoleNavigation();currentProjectId=null;adminMemberFilter=null;currentView="dashboard";render();toast("Demo workspace reset");
+}
+function populateWelcomeUsers(){
+  var select=document.getElementById("welcomeUser"),selected=select.value;select.innerHTML=Object.keys(USERS).map(function(id){return '<option value="'+id+'">'+esc(USERS[id].name)+'</option>';}).join("");if(USERS[selected])select.value=selected;
 }
 function setupEvents(){
   document.querySelectorAll("[data-role]").forEach(function(b){b.addEventListener("click",function(){launch("admin")})});
   document.getElementById("continueUser").addEventListener("click",function(){launch("user",document.getElementById("welcomeUser").value)});
-  document.querySelectorAll(".nav-item[data-view]").forEach(function(b){b.addEventListener("click",function(){if(Date.now()<suppressMenuClickUntil)return;currentView=b.dataset.view;currentProjectId=null;if(currentView==="priority"){currentFilters.high=true}else if(currentView==="gallery"){currentFilters.high=false}render();document.getElementById("sidebar").classList.remove("open")})});
   document.getElementById("menuToggle").addEventListener("click",function(){document.getElementById("sidebar").classList.toggle("open")});
-  document.getElementById("openAiNav").addEventListener("click",openAi);document.getElementById("openAiTop").addEventListener("click",openAi);
+  document.getElementById("openAiTop").addEventListener("click",openAi);
   document.getElementById("closeAi").addEventListener("click",closeAi);document.getElementById("drawerBackdrop").addEventListener("click",closeAi);
   document.querySelectorAll("[data-ai-action]").forEach(function(b){b.addEventListener("click",function(){sendAi(b.dataset.aiAction,b.textContent.trim())})});
   document.getElementById("aiForm").addEventListener("submit",function(e){e.preventDefault();var input=document.getElementById("aiInput");if(!input.value.trim())return;sendAi("custom",input.value.trim());input.value=""});
   document.getElementById("globalSearch").addEventListener("input",function(e){currentFilters.query=e.target.value;currentView="gallery";currentProjectId=null;render()});
-  document.getElementById("switchRole").addEventListener("click",function(){document.getElementById("app").classList.add("hidden");document.getElementById("intro").classList.remove("hidden");document.dispatchEvent(new Event("hosis:intro:replay"));document.getElementById("sidebar").classList.remove("open");document.getElementById("welcomeTitle").focus();refreshIcons()});
-  document.getElementById("resetDemo").addEventListener("click",function(){if(confirm("Reset all prototype edits saved in this browser?")){state={role:state.role,userId:state.userId,projects:clone(INITIAL_PROJECTS),settings:clone(DEFAULT_SETTINGS)};state.projects.forEach(normalizeProject);saveState();applyWorkspaceSettings();applyMenuOrder();currentProjectId=null;currentView="dashboard";render();toast("Prototype data reset")}});
+  document.getElementById("switchRole").addEventListener("click",function(){populateWelcomeUsers();document.getElementById("app").classList.add("hidden");document.getElementById("intro").classList.remove("hidden");document.dispatchEvent(new Event("hosis:intro:replay"));document.getElementById("sidebar").classList.remove("open");document.getElementById("welcomeTitle").focus();refreshIcons()});
   document.querySelectorAll("[data-close-modal]").forEach(function(b){b.addEventListener("click",closeScope)});
   document.querySelectorAll("[data-close-edit]").forEach(function(b){b.addEventListener("click",closeEditor)});
   document.getElementById("editForm").addEventListener("submit",function(e){e.preventDefault();saveEditor(e.currentTarget)});
@@ -1037,6 +1187,7 @@ function setupEvents(){
   document.addEventListener("keydown",function(e){if(e.key==="Escape"){closeAi();closeScope();closeEditor()}});
 }
 
+populateWelcomeUsers();
 setupEvents();
 refreshIcons();
 startIntro();
