@@ -141,7 +141,7 @@ test('project layout and checklist fit phone, tablet and desktop', async ({ page
   }
   await page.screenshot({ path: 'test-results/project-desktop.png', fullPage: true });
   await page.locator('#stageContent').screenshot({ path: 'test-results/project-workflow.png' });
-  await page.locator('.company-grid').screenshot({ path: 'test-results/project-companies.png' });
+  await page.locator('[data-project-section="companies"]').screenshot({ path: 'test-results/project-companies.png' });
   await page.setViewportSize({ width: 375, height: 844 });
   await page.screenshot({ path: 'test-results/project-mobile.png', fullPage: true });
 });

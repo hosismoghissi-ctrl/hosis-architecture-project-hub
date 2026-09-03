@@ -792,6 +792,7 @@ function bindDashboardTasks(){
 
 function renderTasksPage(){
   var projects=visibleProjects(),member=state.role==="user"?USERS[state.userId]:null;
+  if(taskFilters.status==='Completed')showCompletedTasks=true;
   setHeading(state.role==="admin"?"Portfolio / Tasks":"My Workspace / Tasks",state.role==="admin"?"Tasks":"My Tasks");
   var filtered=projects.filter(function(p){return (!taskFilters.project||p.id===taskFilters.project)&&(!taskFilters.client||p.client===taskFilters.client)&&(!taskFilters.member||p.assigned.indexOf(taskFilters.member)>-1);}).map(function(p){return Object.assign({},p,{tasks:p.tasks.filter(function(t){return (!taskFilters.status||(taskFilters.status==='Completed')===!!t[4])&&(!taskFilters.priority||t[3]===taskFilters.priority)&&(!taskFilters.dateFrom||t[2]>=taskFilters.dateFrom)&&(!taskFilters.dateTo||t[2]<=taskFilters.dateTo);})});});
   document.getElementById("content").innerHTML='<div class="section-title"><div><span class="section-kicker">'+(member?'PERSONAL WORKLOAD':'PORTFOLIO WORKLOAD')+'</span><h2>'+(member?'My Tasks Across All Projects':'Tasks Across All Projects')+'</h2><p>Project-linked tasks across '+projects.length+' active projects. Member filters use project team assignments.</p></div></div>'+renderFilterBar('task',taskFilters,projects)+renderDashboardTasks(filtered,member?'My Tasks Across All Projects':'Portfolio Tasks');
@@ -810,7 +811,7 @@ function prepareProfileEditor(cfg,project,kind,index){
     ['website','address'].forEach(function(key){if(!cfg.fields.some(function(f){return f.name===key;}))cfg.fields.push({name:key,label:key==='website'?'Website':'Company Address',value:record&&record[key]||'',required:false,wide:true});});
     var previousSave=cfg.save,oldKey=record&&clientKey(record.name),previousValidation=cfg.validate;
     cfg.validate=function(v){if(v.website&&!/^https:\/\/\S+$/i.test(v.website))return 'Use an HTTPS website URL.';return previousValidation?previousValidation(v):'';};
-    cfg.save=function(v){previousSave(v);if(record){record.website=v.website;record.address=v.address;}if(kind==='companies'&&currentView==='company'&&oldKey){allWorkspaceProjects().forEach(function(p){p.companies.filter(function(c){return clientKey(c.name)===oldKey;}).forEach(function(c){Object.assign(c,v);});});currentCompanyKey=clientKey(v.name);}};
+    cfg.save=function(v){previousSave(v);if(record){record.website=v.website;record.address=v.address;}if(kind==='companies'&&currentView==='company'&&oldKey){allWorkspaceProjects().forEach(function(p){p.companies.filter(function(c){return clientKey(c.name)===oldKey;}).forEach(function(c){Object.assign(c,{name:v.name,logo:v.logo,website:v.website,address:v.address});});});currentCompanyKey=clientKey(v.name);}};
   }
   if(kind==='tasks'){var task=project.tasks[index],saveTask=cfg.save;cfg.save=function(v){saveTask(v);if(task&&task[5])project.tasks[index][5]=task[5];};}
 }
@@ -1422,7 +1423,7 @@ function bindCommon(){
 function resetDemoData(){
   if(!confirm("Reset all prototype edits saved in this browser?"))return;
   state={role:state.role,userId:state.userId,activeWorkspaceId:DEFAULT_WORKSPACE.id,projects:clone(INITIAL_PROJECTS),settings:clone(DEFAULT_SETTINGS),workspace:clone(DEFAULT_WORKSPACE),members:clone(INITIAL_MEMBERS),projectTypes:clone(DEFAULT_PROJECT_TYPES),ui:{scheduleScale:"Month",projectSections:{}}};
-  USERS=state.members;state.projects.forEach(normalizeProject);saveState();applyWorkspaceSettings();renderRoleNavigation();currentProjectId=null;adminMemberFilter=null;currentView="dashboard";render();toast("Demo workspace reset");
+  state.workspaces=[{id:state.workspace.id,name:state.workspace.companyHeader.name,logo:state.workspace.companyHeader.logo,accent:state.workspace.companyHeader.accent}];USERS=state.members;state.projects.forEach(normalizeProject);normalizeClientRegistry(state);saveState();applyWorkspaceSettings();renderRoleNavigation();currentProjectId=null;adminMemberFilter=null;currentView="dashboard";render();toast("Demo workspace reset");
 }
 function populateWelcomeUsers(){
   var select=document.getElementById("welcomeUser"),selected=select.value;select.innerHTML=Object.keys(USERS).map(function(id){return '<option value="'+id+'">'+esc(USERS[id].name)+'</option>';}).join("");if(USERS[selected])select.value=selected;

@@ -399,3 +399,11 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 @media(max-width:1250px){.admin-dashboard-refined .dashboard-projects{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:900px){.admin-dashboard-refined .dashboard-projects{grid-template-columns:repeat(2,minmax(0,1fr))}.company-profile-details .company-summary{grid-template-columns:1fr}}
 @media(max-width:600px){.workspace-filters{grid-template-columns:repeat(2,minmax(0,1fr));padding:14px}.admin-dashboard-refined .dashboard-projects{grid-template-columns:1fr}.logo-upload-control input{max-width:100%}.company-summary div{grid-template-columns:85px minmax(0,1fr)}}
+.admin-dashboard-refined .dashboard-projects .project-card{min-height:340px;display:flex;align-items:flex-end;padding:90px 18px 18px}
+.admin-dashboard-refined .dashboard-projects .card-bottom{position:relative;left:auto;right:auto;bottom:auto;width:100%}
+.workspace-table button,.document-open,.project-internal-members button{border:0;background:transparent;padding:0;font:inherit}
+.workspace-table button:hover,.document-open:hover{text-decoration:underline;color:var(--ink)}
+.workspace-table{font-size:14px}.workspace-filters label,.library-categories button{font-size:14px}.workspace-table th{font-size:13px}
+.file-table .record-status{background:var(--paper);color:var(--muted);border:1px solid var(--line)}
+.project-internal-members button{padding:15px}.company-summary{font-size:14px}.company-summary div{grid-template-columns:105px minmax(0,1fr)}
+.project-internal-members article{min-width:0}.project-internal-members strong{overflow-wrap:anywhere}

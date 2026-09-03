@@ -19,6 +19,8 @@ test('all admin routes render without runtime errors and demo records survive', 
   expect(after.projects).toHaveLength(12); expect(Object.keys(after.members)).toHaveLength(8);
   expect(after.projects).toEqual(before.projects);
   await expect(page.locator('.team-overview-row')).toHaveCount(8);
+  const overlaps=await page.locator('.dashboard-projects .project-card').evaluateAll(cards=>cards.some(card=>card.querySelector('.card-top').getBoundingClientRect().bottom>card.querySelector('.card-bottom').getBoundingClientRect().top));
+  expect(overlaps).toBe(false);
 });
 test('task filters combine project, member, client, status, priority and due dates', async ({ page }) => {
   await admin(page); const s = await state(page), p = s.projects[0];
@@ -120,4 +122,11 @@ test('Files and Tasks fit phone and desktop and contain no page errors', async (
   const errors=[];page.on('pageerror', e => errors.push(e.message));await admin(page);
   for(const width of [390,768,1440]){await page.setViewportSize({width,height:950});for(const route of ['tasks','files']){if(width<900)await page.locator('#menuToggle').click();await page.locator(`[data-view="${route}"]`).click();expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBe(true);}}
   expect(errors).toEqual([]);
+});
+test('reset preserves working clients, companies and workspace settings',async({page})=>{
+  await admin(page);await page.locator('[data-view="settings"]').click();
+  page.once('dialog',d=>d.accept());await page.locator('[data-reset-demo]').click();
+  await expect(page.locator('.team-overview-row')).toHaveCount(8);
+  await page.locator('[data-view="clients"]').click();await expect(page.locator('.directory-card')).toHaveCount(12);
+  await page.locator('[data-view="settings"]').click();await expect(page.locator('#companySettings')).toBeVisible();
 });
