@@ -319,7 +319,7 @@
   .entry-panel { grid-column: 1; max-width: 470px; margin: 0 auto; padding: 22px; }
   .entry-panel h1 { font-size: 32px; }
 }
-@media(max-width:767px) and (max-height:650px) {
+@media(max-height:650px) {
   #introRoot .cinematic-copy { bottom: 74px; }
   #introRoot .cinematic-copy h1 { font-size: 38px; }
   #introRoot .cinematic-supporting { display: none; }
