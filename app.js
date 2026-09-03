@@ -1139,7 +1139,8 @@ function editorConfig(project,kind,index,stageKey){
   }
   if(kind==="companies"){
     item=creating?{id:uid("company"),workspaceId:state.activeWorkspaceId,category:"Consultant",name:"",contact:"",email:"",phone:"",logo:""}:project.companies[index];
-    return {title:creating?"Add Project Company":"Edit Project Company",description:"Client, contractor and consultant details. Contact fields and logo are optional; use an HTTPS logo image URL.",fields:[{name:"category",label:"Company Role / Discipline",value:item.category},{name:"name",label:"Company Name",value:item.name},{name:"contact",label:"Contact Person",value:item.contact,required:false},{name:"email",label:"Email",type:"email",value:item.email,required:false},{name:"phone",label:"Phone",type:"tel",value:item.phone,required:false},{name:"logo",label:"Logo Image URL",type:"url",value:item.logo,required:false}],validate:function(v){return !v.logo||/^https:\/\/\S+$/i.test(v.logo)?"":"Use an HTTPS image URL for the logo.";},save:function(v){Object.assign(item,v,{workspaceId:state.activeWorkspaceId});if(creating)project.companies.push(item);}};
+    var priorContact=item.contact||"";
+    return {title:creating?"Add Project Company":"Edit Project Company",description:"Client, contractor and consultant details. Contact fields and logo are optional; use an HTTPS logo image URL.",fields:[{name:"category",label:"Company Role / Discipline",value:item.category},{name:"name",label:"Company Name",value:item.name},{name:"contact",label:"Contact Person",value:item.contact,required:false},{name:"email",label:"Email",type:"email",value:item.email,required:false},{name:"phone",label:"Phone",type:"tel",value:item.phone,required:false},{name:"logo",label:"Logo Image URL",type:"url",value:item.logo,required:false}],validate:function(v){return !v.logo||/^https:\/\/\S+$/i.test(v.logo)?"":"Use an HTTPS image URL for the logo.";},save:function(v){Object.assign(item,v,{workspaceId:state.activeWorkspaceId});if(creating)project.companies.push(item);if(companyDirectoryType(item)==="clients"){var client=clientByProject(project)||state.clients.find(function(record){return clientKey(record.name)===clientKey(item.name)&&record.workspaceId===state.activeWorkspaceId;});if(!client){client={id:clientIdFor(item.name),workspaceId:state.activeWorkspaceId,name:item.name,logo:"",contacts:[],email:"",phone:"",address:project.address};state.clients.push(client);}project.clientId=client.id;project.client=item.name;client.name=item.name;client.logo=item.logo||client.logo;client.email=item.email||client.email;client.phone=item.phone||client.phone;var contact=client.contacts.find(function(record){return clientKey(record.name)===clientKey(priorContact);});if(item.contact){if(contact)Object.assign(contact,{name:item.contact,title:contact.title||"Client Project Manager",email:item.email||contact.email,phone:item.phone||contact.phone});else client.contacts.push({id:uid("contact"),name:item.contact,title:"Client Project Manager",email:item.email||"",phone:item.phone||""});}}}};
   }
   if(kind==="schedule"){
     item=creating?{id:uid("sch"),workspaceId:state.activeWorkspaceId,stage:project.scope[0],start:"2026-09-01",end:"2026-10-01",status:"Not Started"}:project.schedule[index];
@@ -1246,6 +1247,13 @@ function deleteRecord(project,kind,index,stageKey){
   else if(kind==="permitDrawing")project.permitData.drawings[stageKey].splice(index,1);
   else if(kind==="permitCycle")project.permitData.cycles.splice(index,1);
   else if(kind==="permitComment")project.permitData.cycles[Number(stageKey)].comments.splice(index,1);
+  else if(kind==="companies"){
+    var removed=project.companies[index],removedClientId=project.clientId;project.companies.splice(index,1);
+    if(removed&&companyDirectoryType(removed)==="clients"&&!project.companies.some(function(company){return companyDirectoryType(company)==="clients";})){
+      project.client="Not Assigned";project.clientId="";
+      if(!allWorkspaceProjects().some(function(item){return item.id!==project.id&&item.clientId===removedClientId;}))state.clients=state.clients.filter(function(client){return client.id!==removedClientId;});
+    }
+  }
   else project[kind].splice(index,1);
   saveState();renderProject(project.id);toast("Record deleted");
 }

@@ -50,7 +50,7 @@ test('team overview includes upcoming deadlines and opens the complete member wo
   await expect(page.locator('.team-overview-head')).toContainText('Upcoming Deadline');
   await page.locator('.team-overview-row').first().click();
   await expect(page.locator('.member-personal-header')).toContainText('Welcome,');
-  await expect(page.getByRole('heading', { name: 'My Tasks Across All Projects' })).toBeVisible();
+  await expect(page.locator('#dashboardTasksTitle')).toHaveText('My Tasks Across All Projects');
   await expect(page.getByRole('heading', { name: 'My Deadlines' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'My Meetings' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'My Recent Activity' })).toBeVisible();
