@@ -964,7 +964,7 @@ function renderProject(id){
       projectAccordion(p,"meetings","Project Meetings","Minutes, decisions and task-linked action items","calendar-clock",renderProjectMeetings(p))+
       projectAccordion(p,"schedule","Project Schedule","Stage dates, milestones and project deadlines","gantt-chart-square",renderProjectSchedule(p),state.role==="admin"?'<button class="section-action" data-add="schedule">'+icon("plus")+'Add schedule item</button>':'')+
       projectAccordion(p,"team","Project Team",p.assigned.length+' assigned workspace members',"users",teamBody,state.role==="admin"?'<button class="section-action" data-add="team">'+icon("user-plus")+'Add</button>':'')+
-      projectAccordion(p,"companies","Project Companies",p.companies.length+' client, consultant and contractor records',"building-2",companiesBody,state.role==="admin"?'<button class="section-action" data-add="companies">'+icon("plus")+'Add</button>':'')+
+      projectAccordion(p,"companies","Project Companies",p.companies.length+' client, consultant and contractor records',"building-2",companiesBody,state.role==="admin"?'<button class="section-action" data-add="companies">'+icon("plus")+'Add company</button>':'')+
       projectAccordion(p,"documents","Documents",p.documents.length+' project files',"files",documentsBody,state.role==="admin"?'<button class="section-action" data-add="documents">'+icon("plus")+'Add</button>':'')+
       projectAccordion(p,"activity","Activity","Project history and recorded updates","activity",activityBody,state.role==="admin"?'<button class="section-action" data-add="activity">'+icon("plus")+'Add</button>':'')+
     '</div><aside class="detail-stack">'+
