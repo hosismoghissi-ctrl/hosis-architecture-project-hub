@@ -152,6 +152,16 @@ var DEFAULT_WORKSPACE={
   general:{workspaceTitle:"Project Delivery & Coordination",timezone:"America/Toronto",dateFormat:"MMM D, YYYY"}
 };
 
+var DEFAULT_PROJECT_TYPES=[
+  {name:"Commercial",subtypes:["Retail Store","Restaurant","Office","Shopping Centre","Showroom"]},
+  {name:"Residential",subtypes:["Single Family","Townhouse","Cottage","Condominium","Apartment","Multi-Family"]},
+  {name:"Retail",subtypes:[]},{name:"Office",subtypes:[]},{name:"Institutional",subtypes:[]},
+  {name:"Healthcare",subtypes:["Clinic","Dental Clinic","Medical Office"]},{name:"Hospitality",subtypes:["Hotel","Restaurant"]},
+  {name:"Industrial",subtypes:[]},{name:"Mixed Use",subtypes:[]},{name:"Educational",subtypes:["School","Learning Centre"]},
+  {name:"Financial",subtypes:["Bank Branch","Credit Union","Financial Office"]},{name:"Government",subtypes:[]},
+  {name:"Recreational",subtypes:[]},{name:"Other",subtypes:[]}
+];
+
 var CONSTRUCTION_REGISTERS={
   specifications:{label:"Specifications",icon:"book-open-text",prefix:"SPEC",description:"Project manual, specification sections and revisions"},
   ifc:{label:"IFC Drawings",icon:"file-badge",prefix:"IFC",description:"Issued-for-construction drawing packages"},
@@ -297,6 +307,7 @@ var currentCompanyKey=null;
 var activeStage=null;
 var adminMemberFilter=null;
 var currentFilters={query:"",type:"",status:"",priority:"",user:"",high:false};
+var currentProjectLifecycle="Active";
 var scopeEditingId=null;
 var editContext=null;
 
@@ -389,6 +400,9 @@ function defaultMeetings(project,index){
 }
 function normalizeProject(project,index){
   project.workspaceId=project.workspaceId||DEFAULT_WORKSPACE.id;
+  project.lifecycle=project.lifecycle==="Archived"?"Archived":"Active";
+  project.typeCategory=project.typeCategory||inferProjectCategory(project.type);
+  project.typeSubtype=project.typeSubtype||project.type||"";
   // Keep legacy administration records; they must not become survey evidence.
   if(project.scope.indexOf("admin")>-1){
     project.legacyAdministration=project.legacyAdministration||{stageItems:clone((project.stageItems||{}).admin||STAGE_ITEMS.admin),schedule:clone((project.schedule||[]).filter(function(s){return s.stage==="admin";}))};
@@ -481,6 +495,9 @@ function loadState(){
     member.photo=member.photo||seed.photo||"";member.banner=member.banner||seed.banner||DEFAULT_WORKSPACE.companyHeader.banner;member.welcome=member.welcome||seed.welcome||"Your project workload, clearly organized.";member.initials=initials(member.name);member.workspaceId=member.workspaceId||next.workspace.id;
   });
   next.activeWorkspaceId=next.activeWorkspaceId||next.workspace.id;
+  next.projectTypes=Array.isArray(next.projectTypes)&&next.projectTypes.length?next.projectTypes:clone(DEFAULT_PROJECT_TYPES);
+  next.projectTypes.forEach(function(type){type.workspaceId=type.workspaceId||next.workspace.id;type.subtypes=Array.isArray(type.subtypes)?type.subtypes:[];});
+  next.ui=next.ui||{};next.ui.scheduleScale=next.ui.scheduleScale||"Month";next.ui.projectSections=next.ui.projectSections||{};
   next.projects.forEach(normalizeProject);
   return next;
 }
@@ -491,18 +508,30 @@ function refreshIcons(){if(window.lucide) window.lucide.createIcons();}
 function initials(name){return String(name||"NA").split(" ").map(function(x){return x.charAt(0)}).slice(0,2).join("").toUpperCase();}
 function toast(message){var el=document.getElementById("toast");el.textContent=message;el.classList.add("show");setTimeout(function(){el.classList.remove("show")},2200);}
 function formatDate(date){if(!date)return "No date";return new Date(date+"T12:00:00").toLocaleDateString("en-CA",{month:"short",day:"numeric",year:"numeric"});}
+function inferProjectCategory(type){
+  var value=String(type||"").toLowerCase();
+  var match=DEFAULT_PROJECT_TYPES.find(function(group){return value.indexOf(group.name.toLowerCase())>-1||group.subtypes.some(function(subtype){return value.indexOf(subtype.toLowerCase())>-1;});});
+  if(match)return match.name;
+  if(/clinic|dental|medical|health/.test(value))return "Healthcare";
+  if(/school|learning|education/.test(value))return "Educational";
+  if(/residen|apartment|condo|townhouse|cottage/.test(value))return "Residential";
+  if(/office|workplace/.test(value))return "Office";
+  if(/retail|store|showroom/.test(value))return "Retail";
+  return "Other";
+}
 function allTypes(){return Array.from(new Set(state.projects.map(function(p){return p.type}))).sort();}
 function allStatuses(){return Array.from(new Set(state.projects.map(function(p){return p.status}))).sort();}
-function visibleProjects(){if(state.role==="admin")return state.projects;return state.projects.filter(function(p){return p.assigned.indexOf(state.userId)>-1});}
+function allWorkspaceProjects(){return state.projects.filter(function(p){return p.workspaceId===state.activeWorkspaceId;});}
+function visibleProjects(includeArchived){var projects=allWorkspaceProjects().filter(function(p){return state.role==="admin"||p.assigned.indexOf(state.userId)>-1;});return includeArchived?projects:projects.filter(function(p){return p.lifecycle!=="Archived";});}
 function dashboardProjects(){
   if(state.role!=="admin")return visibleProjects();
-  return adminMemberFilter?state.projects.filter(function(p){return p.assigned.indexOf(adminMemberFilter)>-1;}):state.projects;
+  return adminMemberFilter?visibleProjects().filter(function(p){return p.assigned.indexOf(adminMemberFilter)>-1;}):visibleProjects();
 }
 function workspaceProjects(){return state.role==="admin"&&adminMemberFilter?dashboardProjects():visibleProjects();}
 function priorityClass(value){return String(value||"Medium").toLowerCase();}
 function formatCurrency(value){var number=Number(value)||0;return number.toLocaleString("en-CA",{style:"currency",currency:"CAD",maximumFractionDigits:0});}
 function stageLabel(key){return STAGES[key]?STAGES[key].label:key==="admin"?"Project Administration (archived)":key;}
-function projectById(id){return state.projects.find(function(p){return p.id===id});}
+function projectById(id){return allWorkspaceProjects().find(function(p){return p.id===id});}
 function stageProgress(project,key){
   return stageCompletion(project,key).percent;
 }
@@ -603,7 +632,7 @@ function render(){
 function setHeading(breadcrumb,title){document.getElementById("breadcrumb").textContent=breadcrumb;document.getElementById("pageTitle").textContent=title;}
 function statCard(iconName,value,label){return '<div class="stat-card"><span class="stat-icon">'+icon(iconName)+'</span><strong>'+value+'</strong><small>'+esc(label)+'</small></div>';}
 function memberStats(userId){
-  var projects=state.projects.filter(function(p){return p.assigned.indexOf(userId)>-1;}),tasks=[];
+  var projects=allWorkspaceProjects().filter(function(p){return p.lifecycle!=="Archived"&&p.assigned.indexOf(userId)>-1;}),tasks=[];
   projects.forEach(function(p){p.tasks.forEach(function(t){tasks.push(t);});});
   var today=isoDate(new Date()),week=addDays(today,7);
   var deadlines=[];projects.forEach(function(p){p.deadlines.forEach(function(d){deadlines.push({project:p,title:d[0],date:d[1],stage:d[2]});});});deadlines.sort(function(a,b){return a.date.localeCompare(b.date);});
@@ -673,20 +702,25 @@ function renderMemberActivity(rows){
   return '<section class="panel member-summary-panel"><div class="panel-head"><div><h3>My Recent Activity</h3><small>Latest updates from assigned projects</small></div>'+icon("activity")+'</div><div class="summary-list activity-summary">'+(rows.length?rows.slice(0,6).map(function(row){return '<button data-project="'+row.project.id+'"><span><strong>'+esc(row.item[0])+'</strong><small>'+esc(row.project.number+' · '+stageLabel(row.item[2]))+'</small></span><time>'+esc(row.item[1])+'</time></button>';}).join(""):'<p class="inline-empty">No recent activity.</p>')+'</div></section>';
 }
 
+function renderProjectTypeSettings(){
+  return '<section id="projectTypeSettings" class="settings-section"><div class="settings-section-head"><div><span class="settings-icon">'+icon("shapes")+'</span><div><h3>Project Types & Subtypes</h3><p>Broad categories stay consistent while admins can add workspace-specific subtypes.</p></div></div><button class="primary-button" data-add-project-type>'+icon("plus")+'Add category or subtype</button></div><div class="project-type-grid">'+state.projectTypes.map(function(group){return '<article><div><strong>'+esc(group.name)+'</strong><small>'+group.subtypes.length+' subtypes</small></div><div class="type-chip-list">'+(group.subtypes.length?group.subtypes.map(function(subtype){return '<span>'+esc(subtype)+'</span>';}).join(""):'<em>No subtypes yet</em>')+'</div></article>';}).join("")+'</div></section>';
+}
 function renderSettingsPage(){
   setHeading("System / Admin Settings","Admin Settings");
   var company=state.workspace.companyHeader,s=state.settings,labels={dashboard:"Dashboard",gallery:"Projects",schedule:"Schedule",tasks:"Tasks"};
   var companyRecords=[];state.projects.forEach(function(project){project.companies.forEach(function(record,index){if(record.name&&!companyRecords.some(function(x){return x.record.name===record.name;}))companyRecords.push({project:project,record:record,index:index});});});
   document.getElementById("content").innerHTML='<div class="section-title settings-title"><div><span class="section-kicker">SYSTEM</span><h2>Admin Settings</h2><p>One central place for workspace identity, member profiles and general permissions. Structured for additional settings later.</p></div></div>'+
-    '<nav class="settings-index" aria-label="Settings sections"><a href="#companySettings">'+icon("building-2")+'Company</a><a href="#memberSettings">'+icon("users")+'Members</a><a href="#logoSettings">'+icon("badge")+'Company Logos</a><a href="#generalSettings">'+icon("sliders-horizontal")+'General</a></nav>'+
+    '<nav class="settings-index" aria-label="Settings sections"><a href="#companySettings">'+icon("building-2")+'Company</a><a href="#memberSettings">'+icon("users")+'Members</a><a href="#logoSettings">'+icon("badge")+'Company Logos</a><a href="#projectTypeSettings">'+icon("shapes")+'Project Types</a><a href="#generalSettings">'+icon("sliders-horizontal")+'General</a></nav>'+
     '<section id="companySettings" class="settings-section"><div class="settings-section-head"><div><span class="settings-icon">'+icon("building-2")+'</span><div><h3>Company Header & Branding</h3><p>Admin-only workspace identity. This never changes a member’s personal header.</p></div></div><button class="primary-button" data-edit-workspace>'+icon("pencil")+'Edit company branding</button></div><div class="brand-preview dashboard-hero" style="--dashboard-image:url(\''+esc(company.banner)+'\')"><div class="company-hero-logo">'+(company.logo?'<img src="'+esc(company.logo)+'" alt="">':icon("building-2"))+'</div><div class="hero-copy"><div class="eyebrow">'+esc(company.name.toUpperCase())+'</div><h2>'+esc(company.welcome)+'</h2><p>'+esc(company.summary)+'</p></div></div></section>'+
     '<section id="memberSettings" class="settings-section"><div class="settings-section-head"><div><span class="settings-icon">'+icon("users")+'</span><div><h3>Member Profiles & Personal Headers</h3><p>Edit profile images, personal banners, names, job titles and welcome text.</p></div></div></div><div class="settings-member-grid">'+Object.keys(USERS).map(function(id){var m=USERS[id];return '<article class="settings-member-card"><img src="'+esc(m.photo)+'" alt=""><div><strong>'+esc(m.name)+'</strong><small>'+esc(m.role)+'</small><span>'+esc(m.email)+'</span></div><button data-edit-member="'+id+'" aria-label="Edit '+esc(m.name)+'">'+icon("pencil")+'Edit</button></article>';}).join("")+'</div></section>'+
     '<section id="logoSettings" class="settings-section"><div class="settings-section-head"><div><span class="settings-icon">'+icon("badge")+'</span><div><h3>Client & Company Logos</h3><p>Logos remain linked to their project company records so future workspace data stays isolated.</p></div></div></div><div class="company-logo-settings">'+companyRecords.slice(0,12).map(function(x){return '<article><div class="company-logo">'+(x.record.logo?'<img src="'+esc(x.record.logo)+'" alt="">':'<span>'+esc(initials(x.record.name))+'</span>')+'</div><span><strong>'+esc(x.record.name)+'</strong><small>'+esc(x.record.category+' · '+x.project.number)+'</small></span><button data-company-logo="'+x.project.id+'" data-company-index="'+x.index+'" aria-label="Edit '+esc(x.record.name)+' logo">'+icon("image")+'Logo</button></article>';}).join("")+'</div></section>'+
+    renderProjectTypeSettings()+
     '<section id="generalSettings" class="settings-section"><div class="settings-section-head"><div><span class="settings-icon">'+icon("sliders-horizontal")+'</span><div><h3>General Workspace Settings</h3><p>Workspace-level permissions and navigation layout. Members cannot change these controls.</p></div></div><button class="secondary-button" data-edit-general>'+icon("settings-2")+'Edit general settings</button></div><div class="settings-permissions"><span><b>Member profile image editing</b><small>'+(state.workspace.permissions.memberCanEditPhoto?'Allowed':'Admin only')+'</small></span><span><b>Member banner editing</b><small>'+(state.workspace.permissions.memberCanEditBanner?'Allowed':'Admin only')+'</small></span><span><b>Workspace ID</b><small>'+esc(state.workspace.id)+'</small></span></div><div class="drag-instruction">'+icon("grip-vertical")+' Admin can reorder the primary navigation. Member navigation remains role-controlled.</div><div class="menu-order-list">'+s.menuOrder.map(function(key,index){return '<div><span>'+icon("grip-vertical")+esc(labels[key])+'</span><div><button data-move-menu="'+key+'" data-direction="-1" aria-label="Move '+esc(labels[key])+' up" '+(index===0?'disabled':'')+'>'+icon("arrow-up")+'</button><button data-move-menu="'+key+'" data-direction="1" aria-label="Move '+esc(labels[key])+' down" '+(index===s.menuOrder.length-1?'disabled':'')+'>'+icon("arrow-down")+'</button></div></div>';}).join("")+'</div><div class="settings-danger"><div><strong>Reset demo workspace</strong><small>Restore the original Hosis projects, members and workspace settings.</small></div><button class="secondary-button" data-reset-demo>'+icon("rotate-ccw")+'Reset demo data</button></div></section>';
   document.querySelector("[data-edit-workspace]").addEventListener("click",function(){openEditor(null,"settings",-1,null);});
   document.querySelectorAll("[data-edit-member]").forEach(function(button){button.addEventListener("click",function(){openEditor(null,"memberProfile",-1,button.dataset.editMember);});});
   document.querySelectorAll("[data-company-logo]").forEach(function(button){button.addEventListener("click",function(){openEditor(projectById(button.dataset.companyLogo),"companyLogo",Number(button.dataset.companyIndex),null);});});
   document.querySelector("[data-edit-general]").addEventListener("click",function(){openEditor(null,"workspaceGeneral",-1,null);});
+  document.querySelector("[data-add-project-type]").addEventListener("click",function(){openEditor(null,"projectType",-1,null);});
   document.querySelector("[data-reset-demo]").addEventListener("click",resetDemoData);
   document.querySelectorAll("[data-move-menu]").forEach(function(button){button.addEventListener("click",function(){moveMenuItem(button.dataset.moveMenu,Number(button.dataset.direction));});});refreshIcons();
 }
@@ -806,7 +840,7 @@ function bindDirectory(){
 }
 
 function projectCard(p){
-  return '<button class="project-card" data-project="'+p.id+'"><img src="'+esc(p.image)+'" alt="'+esc(p.name)+'" loading="lazy"><span class="card-top"><span class="card-tags"><span class="pill">'+esc(p.status)+'</span><span class="pill '+priorityClass(p.priority)+'">'+esc(p.priority)+'</span></span><span class="card-arrow">'+icon("arrow-up-right")+'</span></span><span class="card-bottom"><small>'+esc(p.number+" · "+p.type)+'</small><h3>'+esc(p.name)+'</h3><p>'+icon("map-pin")+' '+esc(p.address)+'</p><span class="card-meta"><span>'+p.scope.length+' active stages</span><span>'+p.assigned.map(function(u){return esc(USERS[u].name.split(" ")[0])}).join(" · ")+'</span></span></span></button>';
+  return '<button class="project-card'+(p.lifecycle==="Archived"?' archived':'')+'" data-project="'+p.id+'"><img src="'+esc(p.image)+'" alt="'+esc(p.name)+'" loading="lazy"><span class="card-top"><span class="card-tags"><span class="pill">'+esc(p.status)+'</span>'+(p.lifecycle==="Archived"?'<span class="pill archived-pill">Archived</span>':'<span class="pill '+priorityClass(p.priority)+'">'+esc(p.priority)+'</span>')+'</span><span class="card-arrow">'+icon("arrow-up-right")+'</span></span><span class="card-bottom"><small>'+esc(p.number+" · "+p.typeCategory+(p.typeSubtype?' / '+p.typeSubtype:''))+'</small><h3>'+esc(p.name)+'</h3><p>'+icon("map-pin")+' '+esc(p.address)+'</p><span class="card-meta"><span>'+p.scope.length+' project stages</span><span>'+p.assigned.map(function(u){return USERS[u]?esc(USERS[u].name.split(" ")[0]):""}).filter(Boolean).join(" · ")+'</span></span></span></button>';
 }
 function filterProject(p){
   var q=currentFilters.query.toLowerCase().trim();
@@ -814,10 +848,13 @@ function filterProject(p){
   return matches&&(!currentFilters.type||p.type===currentFilters.type)&&(!currentFilters.status||p.status===currentFilters.status)&&(!currentFilters.priority||p.priority===currentFilters.priority)&&(!currentFilters.user||p.assigned.indexOf(currentFilters.user)>-1)&&(!currentFilters.high||p.priority==="High");
 }
 function renderGallery(){
-  var projects=workspaceProjects().filter(filterProject),member=state.role==="admin"&&adminMemberFilter?USERS[adminMemberFilter]:null;
+  var base=state.role==="admin"?visibleProjects(true):workspaceProjects(),projects=base.filter(function(p){return p.lifecycle===currentProjectLifecycle;}).filter(filterProject),member=state.role==="admin"&&adminMemberFilter?USERS[adminMemberFilter]:null;
+  if(member)projects=projects.filter(function(p){return p.assigned.indexOf(adminMemberFilter)>-1;});
+  var activeCount=base.filter(function(p){return p.lifecycle!=="Archived";}).length,archivedCount=base.filter(function(p){return p.lifecycle==="Archived";}).length;
   setHeading(member?"Members / "+member.name:"Portfolio / Projects",currentView==="priority"?"High-Priority Projects":member?member.name+" · Projects":state.role==="user"?"My Projects":"Projects");
   var userOptions=Object.keys(USERS).map(function(k){return '<option value="'+k+'"'+(currentFilters.user===k?" selected":"")+'>'+esc(USERS[k].name)+'</option>'}).join("");
-  var html='<div class="section-title"><div><h2>'+(currentView==="priority"?"Priority Focus":"Architecture Portfolio")+'</h2><p>'+projects.length+' fictional projects match the current view.</p></div></div>'+
+  var html='<div class="section-title"><div><span class="section-kicker">PROJECT LIFECYCLE</span><h2>'+(currentProjectLifecycle==="Archived"?"Archived Projects":state.role==="user"?"My Active Projects":"Active Projects")+'</h2><p>'+projects.length+' projects match the current view. Archiving preserves every record.</p></div></div>'+
+    '<div class="lifecycle-tabs" role="tablist" aria-label="Project lifecycle"><button role="tab" data-lifecycle-tab="Active" aria-selected="'+(currentProjectLifecycle==="Active")+'" class="'+(currentProjectLifecycle==="Active"?'active':'')+'">Active Projects <b>'+activeCount+'</b></button>'+(state.role==="admin"?'<button role="tab" data-lifecycle-tab="Archived" aria-selected="'+(currentProjectLifecycle==="Archived")+'" class="'+(currentProjectLifecycle==="Archived"?'active':'')+'">Archived Projects <b>'+archivedCount+'</b></button>':'')+'</div>'+
     '<section class="filter-bar"><label class="filter-field">'+icon("search")+'<input id="gallerySearch" placeholder="Search project name or number" value="'+esc(currentFilters.query)+'"></label>'+
     '<label class="filter-field">'+icon("building-2")+'<select data-filter="type"><option value="">All project types</option>'+allTypes().map(function(t){return '<option'+(currentFilters.type===t?" selected":"")+'>'+esc(t)+'</option>'}).join("")+'</select></label>'+
     '<label class="filter-field">'+icon("activity")+'<select data-filter="status"><option value="">All statuses</option>'+allStatuses().map(function(t){return '<option'+(currentFilters.status===t?" selected":"")+'>'+esc(t)+'</option>'}).join("")+'</select></label>'+
@@ -829,6 +866,7 @@ function renderGallery(){
   document.getElementById("gallerySearch").addEventListener("input",function(e){currentFilters.query=e.target.value;renderGallery()});
   document.querySelectorAll("[data-filter]").forEach(function(el){el.addEventListener("change",function(){currentFilters[el.dataset.filter]=el.value;renderGallery()})});
   document.getElementById("highToggle").addEventListener("click",function(){currentFilters.high=!currentFilters.high;renderGallery()});
+  document.querySelectorAll("[data-lifecycle-tab]").forEach(function(button){button.addEventListener("click",function(){currentProjectLifecycle=button.dataset.lifecycleTab;currentFilters.high=false;renderGallery();});});
   bindProjectCards();
 }
 
@@ -838,27 +876,34 @@ function timelineBounds(projects){
   var start=new Date(Math.min.apply(null,dates)),end=new Date(Math.max.apply(null,dates));start.setDate(start.getDate()-10);end.setDate(end.getDate()+10);return {start:start,end:end};
 }
 function timelinePosition(date,bounds){return Math.max(0,Math.min(100,(new Date(date+"T12:00:00")-bounds.start)/(bounds.end-bounds.start)*100));}
-function monthMarkers(bounds){
-  var items=[],cursor=new Date(bounds.start.getFullYear(),bounds.start.getMonth(),1);if(cursor<bounds.start)cursor.setMonth(cursor.getMonth()+1);
-  while(cursor<=bounds.end){items.push({label:cursor.toLocaleDateString("en-CA",{month:"short",year:"2-digit"}),left:(cursor-bounds.start)/(bounds.end-bounds.start)*100});cursor.setMonth(cursor.getMonth()+1)}
+function timelineMarkers(bounds,scale){
+  var items=[],cursor=new Date(bounds.start),step=1,options={month:"short",year:"2-digit"};
+  if(scale==="Month"){cursor=new Date(bounds.start.getFullYear(),bounds.start.getMonth(),1);if(cursor<bounds.start)cursor.setMonth(cursor.getMonth()+1);}
+  else if(scale==="Week"){step=7;options={month:"short",day:"numeric"};cursor.setDate(cursor.getDate()+(7-cursor.getDay())%7);}
+  else {step=7;options={month:"short",day:"numeric"};}
+  while(cursor<=bounds.end){items.push({label:cursor.toLocaleDateString("en-CA",options),left:(cursor-bounds.start)/(bounds.end-bounds.start)*100});if(scale==="Month")cursor.setMonth(cursor.getMonth()+1);else cursor.setDate(cursor.getDate()+step);}
   return items;
 }
-var suppressScheduleClickUntil=0,timelineProjectDrag=null;
+function monthMarkers(bounds){return timelineMarkers(bounds,"Month");}
+function memberAvatars(project){return '<span class="timeline-avatars">'+project.assigned.slice(0,4).map(function(id){var user=USERS[id];return user?'<img src="'+esc(user.photo)+'" alt="'+esc(user.name)+'" title="'+esc(user.name)+'">':'';}).join("")+(project.assigned.length>4?'<b>+'+(project.assigned.length-4)+'</b>':'')+'</span>';}
+var suppressScheduleClickUntil=0,timelineProjectDrag=null,timelineResizeDrag=null;
 function shiftProjectSchedule(project,days){project.schedule.forEach(function(item){item.start=addDays(item.start,days);item.end=addDays(item.end,days);});}
 function moveProjectBefore(projectId,targetId){
   if(projectId===targetId)return;var from=state.projects.findIndex(function(p){return p.id===projectId;}),to=state.projects.findIndex(function(p){return p.id===targetId;});if(from<0||to<0)return;
   var item=state.projects.splice(from,1)[0];to=state.projects.findIndex(function(p){return p.id===targetId;});state.projects.splice(to,0,item);saveState();
 }
 function renderTimeline(projects,compact){
-  var bounds=timelineBounds(projects),months=monthMarkers(bounds);
-  var head='<div class="timeline-head"><div class="timeline-label">PROJECT / STAGE</div><div class="timeline-months">'+months.map(function(m){return '<span style="left:'+m.left+'%">'+esc(m.label)+'</span>'}).join("")+'</div></div>';
+  var bounds=timelineBounds(projects),scale=compact?"Month":state.ui.scheduleScale,markers=timelineMarkers(bounds,scale),today=timelinePosition(isoDate(new Date()),bounds),todayVisible=new Date()>=bounds.start&&new Date()<=bounds.end,canvasWidth=scale==="Day"?2400:scale==="Week"?1500:980;
+  var head='<div class="timeline-head"><div class="timeline-label">PROJECT / STAGE</div><div class="timeline-months">'+markers.map(function(m){return '<span style="left:'+m.left+'%">'+esc(m.label)+'</span>'}).join("")+(todayVisible?'<i class="timeline-today-label" style="left:'+today+'%">TODAY</i>':'')+'</div></div>';
   var rows=projects.map(function(p){
     var schedule=compact?p.schedule.slice(0,4):p.schedule;
-    var bars=schedule.map(function(s,i){var originalIndex=p.schedule.indexOf(s),left=timelinePosition(s.start,bounds),right=timelinePosition(s.end,bounds),width=Math.max(2,right-left);return '<button class="timeline-bar stage-'+s.stage+(state.role==="admin"&&!compact?' schedule-draggable':'')+'" data-project="'+p.id+'" data-schedule-item="'+originalIndex+'" '+(state.role==="admin"&&!compact?'draggable="true"':'')+' title="'+esc(stageLabel(s.stage)+" · "+formatDate(s.start)+" to "+formatDate(s.end)+(state.role==="admin"&&!compact?" · Drag to change dates":""))+'" style="left:'+left+'%;width:'+width+'%;top:'+(i*25+7)+'px"><span>'+icon(STAGES[s.stage].icon)+esc(stageLabel(s.stage))+'</span></button>'}).join("");
+    var bars=schedule.map(function(s,i){var originalIndex=p.schedule.indexOf(s),left=timelinePosition(s.start,bounds),right=timelinePosition(s.end,bounds),width=Math.max(2.4,right-left),top=i*36+9;return '<button class="timeline-bar stage-'+s.stage+(state.role==="admin"&&!compact?' schedule-draggable':'')+'" data-project="'+p.id+'" data-schedule-item="'+originalIndex+'" '+(state.role==="admin"&&!compact?'draggable="true"':'')+' title="'+esc(stageLabel(s.stage)+" · "+formatDate(s.start)+" to "+formatDate(s.end)+(state.role==="admin"&&!compact?" · Drag to move":""))+'" style="left:'+left+'%;width:'+width+'%;top:'+top+'px"><span>'+icon(STAGES[s.stage].icon)+esc(stageLabel(s.stage))+'<small>'+esc(s.start+' → '+s.end)+'</small></span></button>'+(state.role==="admin"&&!compact?'<button class="timeline-resize-handle start" draggable="true" data-resize-stage="'+originalIndex+'" data-resize-edge="start" data-stage-project="'+p.id+'" style="left:'+left+'%;top:'+top+'px" aria-label="Move '+esc(stageLabel(s.stage))+' start one day earlier" title="Drag to resize start; click for one day earlier"></button><button class="timeline-resize-handle end" draggable="true" data-resize-stage="'+originalIndex+'" data-resize-edge="end" data-stage-project="'+p.id+'" style="left:'+right+'%;top:'+top+'px" aria-label="Extend '+esc(stageLabel(s.stage))+' end one day" title="Drag to resize end; click to extend one day"></button>':'');}).join("");
+    var deadlineMarkers=p.deadlines.map(function(d){var left=timelinePosition(d[1],bounds);return '<button class="timeline-deadline" data-project="'+p.id+'" style="left:'+left+'%" title="'+esc(d[0]+' · '+formatDate(d[1]))+'"><span></span><b>'+esc(d[0])+'</b></button>';}).join("");
+    var milestoneMarkers=[];Object.keys(p.stageItems).forEach(function(key){p.stageItems[key].forEach(function(item){if(item.date)milestoneMarkers.push('<i class="timeline-milestone stage-'+key+'" style="left:'+timelinePosition(item.date,bounds)+'%" title="'+esc(item.title+' · '+formatDate(item.date))+'"></i>');});});
     var tools=state.role==="admin"&&!compact?'<div class="timeline-row-tools"><button class="timeline-drag-handle" draggable="true" data-project-reorder="'+p.id+'" aria-label="Drag to reorder '+esc(p.name)+'">'+icon("grip-vertical")+'</button><button data-shift-project="'+p.id+'" data-days="-7" aria-label="Move '+esc(p.name)+' one week earlier">−7d</button><button data-shift-project="'+p.id+'" data-days="7" aria-label="Move '+esc(p.name)+' one week later">+7d</button></div>':'';
-    return '<div class="timeline-row" data-timeline-row="'+p.id+'" style="--lanes:'+schedule.length+'"><div class="timeline-project-wrap"><button class="timeline-project" data-project="'+p.id+'"><strong>'+esc(p.number)+'</strong><small>'+esc(p.name)+'</small></button>'+tools+'</div><div class="timeline-lane">'+months.map(function(m){return '<i style="left:'+m.left+'%"></i>'}).join("")+bars+'</div></div>';
+    return '<div class="timeline-row" data-timeline-row="'+p.id+'" style="--lanes:'+schedule.length+'"><div class="timeline-project-wrap"><button class="timeline-project" data-project="'+p.id+'"><span><strong>'+esc(p.number)+'</strong><small>'+esc(p.name)+'</small></span>'+memberAvatars(p)+'</button>'+tools+'</div><div class="timeline-lane">'+markers.map(function(m){return '<i class="timeline-gridline" style="left:'+m.left+'%"></i>'}).join("")+(todayVisible?'<i class="timeline-today" style="left:'+today+'%"></i>':'')+deadlineMarkers+milestoneMarkers.join("")+bars+'</div></div>';
   }).join("");
-  return '<div class="timeline-scroll"><div class="timeline-canvas">'+head+rows+'<div class="timeline-legend">'+Object.keys(STAGES).map(function(k){return '<span><i class="stage-'+k+'"></i>'+esc(STAGES[k].label)+'</span>'}).join("")+'</div></div></div>';
+  return '<div class="timeline-scroll"><div class="timeline-canvas" style="min-width:'+canvasWidth+'px">'+head+rows+'<div class="timeline-legend">'+Object.keys(STAGES).map(function(k){return '<span><i class="stage-'+k+'"></i>'+esc(STAGES[k].label)+'</span>'}).join("")+'<span class="legend-deadline"><i></i>Deadline</span><span class="legend-milestone"><i></i>Milestone</span></div></div></div>';
 }
 function bindTimelineInteractions(projects){
   if(state.role!=="admin")return;var bounds=timelineBounds(projects),totalDays=Math.max(1,Math.round((bounds.end-bounds.start)/86400000));
@@ -866,11 +911,13 @@ function bindTimelineInteractions(projects){
   document.querySelectorAll("[data-timeline-row]").forEach(function(row){row.addEventListener("dragover",function(e){if(timelineProjectDrag)e.preventDefault();});row.addEventListener("drop",function(e){if(!timelineProjectDrag)return;e.preventDefault();moveProjectBefore(timelineProjectDrag,row.dataset.timelineRow);timelineProjectDrag=null;suppressScheduleClickUntil=Date.now()+300;renderSchedulePage();toast("Project order saved");});});
   document.querySelectorAll("[data-shift-project]").forEach(function(button){button.addEventListener("click",function(e){e.stopPropagation();var p=projectById(button.dataset.shiftProject);shiftProjectSchedule(p,Number(button.dataset.days));saveState();renderSchedulePage();toast("Project schedule shifted "+Math.abs(Number(button.dataset.days))+" days");});});
   document.querySelectorAll("[data-schedule-item][draggable=true]").forEach(function(bar){var startX=0,laneWidth=1;bar.addEventListener("dragstart",function(e){startX=e.clientX;laneWidth=bar.closest(".timeline-lane").getBoundingClientRect().width;e.dataTransfer.effectAllowed="move";bar.classList.add("dragging");});bar.addEventListener("dragend",function(e){bar.classList.remove("dragging");var days=Math.round((e.clientX-startX)/laneWidth*totalDays);if(!days)return;var p=projectById(bar.dataset.project),item=p.schedule[Number(bar.dataset.scheduleItem)];item.start=addDays(item.start,days);item.end=addDays(item.end,days);saveState();suppressScheduleClickUntil=Date.now()+300;renderSchedulePage();toast(stageLabel(item.stage)+" shifted "+Math.abs(days)+" days");});});
+  document.querySelectorAll("[data-resize-stage]").forEach(function(handle){var startX=0,laneWidth=1,dragged=false;handle.addEventListener("click",function(e){e.stopPropagation();if(dragged){dragged=false;return;}var p=projectById(handle.dataset.stageProject),item=p.schedule[Number(handle.dataset.resizeStage)];if(handle.dataset.resizeEdge==="start")item.start=addDays(item.start,-1);else item.end=addDays(item.end,1);saveState();renderSchedulePage();toast("Stage duration updated");});handle.addEventListener("dragstart",function(e){e.stopPropagation();startX=e.clientX;laneWidth=handle.closest(".timeline-lane").getBoundingClientRect().width;timelineResizeDrag=handle;dragged=false;e.dataTransfer.effectAllowed="move";});handle.addEventListener("dragend",function(e){e.stopPropagation();var days=Math.round((e.clientX-startX)/laneWidth*totalDays);timelineResizeDrag=null;if(!days)return;dragged=true;var p=projectById(handle.dataset.stageProject),item=p.schedule[Number(handle.dataset.resizeStage)],edge=handle.dataset.resizeEdge,next=edge==="start"?addDays(item.start,days):addDays(item.end,days);if(edge==="start"&&next>item.end||edge==="end"&&next<item.start){toast("A stage must end on or after its start date");return;}item[edge]=next;saveState();suppressScheduleClickUntil=Date.now()+300;renderSchedulePage();toast("Stage duration resized "+Math.abs(days)+" days");});});
 }
 function renderSchedulePage(){
   var projects=workspaceProjects(),member=state.role==="admin"&&adminMemberFilter?USERS[adminMemberFilter]:null;setHeading(member?"Members / "+member.name:"Portfolio / Schedule",member?member.name+" · Schedule":state.role==="user"?"My Project Schedule":"Project Schedule & Timeline");
-  var html='<div class="section-title schedule-title"><div><div class="eyebrow dark">PORTFOLIO PLANNING</div><h2>Project Schedule</h2><p>Compare dated stages, see current position and identify overlapping work.</p></div><span class="schedule-count">'+projects.length+' active projects</span></div><section class="panel schedule-panel"><div class="timeline-guide">'+icon("info")+' Each colour is a project stage. Horizontal alignment shows work happening at the same time.</div>'+renderTimeline(projects,false)+'</section>';
+  var html='<div class="section-title schedule-title"><div><div class="eyebrow dark">PORTFOLIO PLANNING</div><h2>Project Schedule</h2><p>Move stages, resize durations, review milestones and compare delivery pressure across the active portfolio.</p></div><span class="schedule-count">'+projects.length+' active projects</span></div><section class="panel schedule-panel"><div class="schedule-toolbar"><div class="timeline-guide">'+icon("info")+' Drag a stage to move it. Drag either edge to resize; keyboard-friendly ±7 day project controls remain available.</div><div class="schedule-scale" role="group" aria-label="Timeline scale">'+["Day","Week","Month"].map(function(scale){return '<button data-schedule-scale="'+scale+'" class="'+(state.ui.scheduleScale===scale?'active':'')+'" aria-pressed="'+(state.ui.scheduleScale===scale)+'">'+scale+'</button>';}).join("")+'</div></div>'+renderTimeline(projects,false)+'</section>';
   document.getElementById("content").innerHTML=html;bindCommon();bindTimelineInteractions(projects);
+  document.querySelectorAll("[data-schedule-scale]").forEach(function(button){button.addEventListener("click",function(){state.ui.scheduleScale=button.dataset.scheduleScale;saveState();renderSchedulePage();});});
 }
 function adminButton(label,kind,index,extra){return state.role==="admin"?'<button class="tiny-action" aria-label="'+esc(label+' '+(kind==="stageItems"?'milestone':kind==='companies'?'company':kind)+' record')+'" data-edit="'+kind+'" data-index="'+index+'" '+(extra||"")+'>'+icon("pencil")+'<span>'+label+'</span></button>':"";}
 function deleteButton(kind,index,extra){return state.role==="admin"?'<button class="icon-button micro danger" data-delete="'+kind+'" data-index="'+index+'" '+(extra||"")+' aria-label="Delete">'+icon("trash-2")+'</button>':"";}
@@ -883,34 +930,55 @@ function companyCard(company,index){
   var logo=/^https:\/\//i.test(company.logo||"")?company.logo:"";
   return '<article class="company-card"><div class="company-heading"><div class="company-logo"><span>'+esc(initials(company.name))+'</span>'+(logo?'<img src="'+esc(logo)+'" alt="'+esc(company.name)+' logo" loading="lazy" referrerpolicy="no-referrer">':'')+'</div><div class="contact-copy"><small>'+esc(company.category)+'</small><h4>'+esc(company.name)+'</h4></div></div>'+(company.contact?'<p class="company-contact">'+esc(company.contact)+'</p>':'')+contactLinks(company)+'<div class="company-footer"><small>'+(logo?'Company logo':'Logo placeholder')+'</small><div class="row-actions">'+adminButton("Edit","companies",index)+deleteButton("companies",index)+'</div></div></article>';
 }
+var PROJECT_SECTION_KEYS=["overview","workflow","meetings","schedule","team","companies","documents","accounting","activity","tasks","notes"];
+function sectionIsOpen(project,key){
+  var stored=state.ui.projectSections[project.id]||{};
+  return stored[key]!==false;
+}
+function projectAccordion(project,key,title,subtitle,iconName,body,action){
+  var open=sectionIsOpen(project,key),panelId="project-section-"+project.id+"-"+key;
+  return '<section class="panel project-accordion'+(open?' open':'')+'" data-project-section="'+key+'"><div class="project-section-head"><button class="project-section-toggle" data-toggle-project-section="'+key+'" aria-expanded="'+open+'" aria-controls="'+panelId+'"><span class="project-section-icon">'+icon(iconName)+'</span><span><strong>'+esc(title)+'</strong>'+(subtitle?'<small>'+esc(subtitle)+'</small>':'')+'</span>'+icon("chevron-down")+'</button>'+(action||'')+'</div><div class="project-section-body" id="'+panelId+'"'+(open?'':' hidden')+'>'+body+'</div></section>';
+}
 function renderProject(id){
   var p=projectById(id);
-  if(!p||visibleProjects().indexOf(p)===-1){currentView="gallery";renderGallery();return}
+  if(!p||(state.role==="admin"?visibleProjects(true):visibleProjects()).indexOf(p)===-1){currentView="gallery";renderGallery();return}
   if(!activeStage||p.scope.indexOf(activeStage)===-1) activeStage=p.scope[0];
   setHeading("Portfolio / "+p.number,p.name);
   var scope=p.scope.map(function(k){return '<button class="stage-chip stage-'+k+(activeStage===k?' active':'')+'" aria-pressed="'+(activeStage===k)+'" aria-controls="stageContent" data-stage="'+k+'"><span class="scope-icon">'+icon(STAGES[k].icon)+'</span><strong>'+esc(STAGES[k].label)+'</strong><small>'+stageProgress(p,k)+'% complete</small></button>'}).join("");
   var tasks=p.tasks.map(function(t,i){return '<div class="task-row'+(t[4]?" done":"")+'"><button class="task-check" data-task="'+t[0]+'" aria-label="'+esc((t[4]?"Reopen ":"Complete ")+t[1])+'" aria-pressed="'+t[4]+'">'+(t[4]?icon("check"):"")+'</button><div><strong>'+esc(t[1])+'</strong><small>'+esc(t[3]+" priority · Due "+formatDate(t[2]))+'</small></div><span class="pill '+priorityClass(t[3])+'">'+esc(t[3])+'</span><div class="row-actions">'+adminButton("Edit","tasks",i)+deleteButton("tasks",i)+'</div></div>'}).join("");
   var adminControls=state.role==="admin"?'<select id="statusSelect" class="admin-select" aria-label="Change project status">'+allStatuses().concat(["Complete","On Hold"]).filter(function(v,i,a){return a.indexOf(v)===i}).map(function(v){return '<option'+(v===p.status?" selected":"")+'>'+esc(v)+'</option>'}).join("")+'</select><select id="prioritySelect" class="admin-select" aria-label="Change priority">'+["High","Medium","Low"].map(function(v){return '<option'+(v===p.priority?" selected":"")+'>'+v+' Priority</option>'}).join("")+'</select>':"";
+  var overviewBody='<p class="overview-summary">'+esc(p.summary)+'</p><div class="overview-grid">'+[["Project Number",p.number],["Project Type",p.typeCategory+(p.typeSubtype?' / '+p.typeSubtype:'')],["Project Area",p.area],["Client",p.client],["Owner",p.owner],["General Contractor",p.contractor],["Address",p.address],["Current Status",p.status],["Lifecycle",p.lifecycle],["Priority",p.priority]].map(function(x){return '<div class="info-cell"><small>'+esc(x[0])+'</small><strong>'+esc(x[1])+'</strong></div>'}).join("")+'</div>';
+  var workflowBody='<div class="scope-stage-list">'+scope+'</div><div id="stageContent" class="stage-content">'+renderStageContent(p,activeStage)+'</div>';
+  var teamBody='<div class="team-grid">'+p.team.map(teamCard).join("")+'</div>';
+  var companiesBody='<div class="company-grid">'+p.companies.map(companyCard).join("")+'</div>';
+  var documentsBody='<div class="compact-register">'+(p.documents.length?p.documents.map(function(d,i){return '<article><span>'+icon("file-text")+'</span><div><strong>'+esc(d[0])+'</strong><small>'+esc(stageLabel(d[1])+' · '+d[2])+'</small></div><div class="row-actions">'+adminButton("Edit","documents",i)+deleteButton("documents",i)+'</div></article>';}).join(""):'<p class="inline-empty">No project documents yet.</p>')+'</div>';
+  var activityBody='<div class="compact-register">'+(p.activity.length?p.activity.map(function(a,i){return '<article><span>'+icon("activity")+'</span><div><strong>'+esc(a[0])+'</strong><small>'+esc(a[1]+' · '+stageLabel(a[2]))+'</small></div><div class="row-actions">'+adminButton("Edit","activity",i)+deleteButton("activity",i)+'</div></article>';}).join(""):'<p class="inline-empty">No project activity yet.</p>')+'</div>';
+  var taskBody='<div class="task-list">'+tasks+'</div>';
+  var notesBody='<textarea id="projectNotes" aria-label="Project Notes" '+(state.role==="admin"?'':'readonly ')+'placeholder="Add project notes…">'+esc(p.notes)+'</textarea><small class="save-hint">'+(state.role==="admin"?'Saved automatically in this browser.':'Read-only for assigned users.')+'</small>';
   var html=
-    '<section class="project-hero"><img src="'+esc(p.image)+'" alt="'+esc(p.name)+'"><div class="project-hero-top"><button class="back-button" data-go-gallery>'+icon("arrow-left")+'Projects</button><div class="card-tags"><span class="pill">'+esc(p.status)+'</span><span class="pill '+priorityClass(p.priority)+'">'+esc(p.priority)+' Priority</span></div></div><div class="project-hero-main"><div><div class="eyebrow">'+esc(p.number+" · "+p.type)+'</div><h1>'+esc(p.name)+'</h1><p>'+icon("map-pin")+' '+esc(p.address)+' &nbsp; · &nbsp; '+esc(p.area)+'</p></div><div class="project-hero-actions">'+adminControls+(state.role==="admin"?'<button class="ghost-button" data-edit="project" data-index="-1">'+icon("square-pen")+'Edit Project</button><button class="ghost-button" id="editScope">'+icon("sliders-horizontal")+'Edit Scope</button>':'')+'<button class="ghost-button" onclick="window.print()">'+icon("printer")+'Print / PDF</button></div></div></section>'+
+    '<section class="project-hero'+(p.lifecycle==="Archived"?' archived-project':'')+'"><img src="'+esc(p.image)+'" alt="'+esc(p.name)+'"><div class="project-hero-top"><button class="back-button" data-go-gallery>'+icon("arrow-left")+'Projects</button><div class="card-tags"><span class="pill">'+esc(p.status)+'</span><span class="pill '+(p.lifecycle==="Archived"?'archived-pill':priorityClass(p.priority))+'">'+esc(p.lifecycle==="Archived"?'Archived':p.priority+' Priority')+'</span></div></div><div class="project-hero-main"><div><div class="eyebrow">'+esc(p.number+" · "+p.typeCategory+(p.typeSubtype?' / '+p.typeSubtype:''))+'</div><h1>'+esc(p.name)+'</h1><p>'+icon("map-pin")+' '+esc(p.address)+' &nbsp; · &nbsp; '+esc(p.area)+'</p></div><div class="project-hero-actions">'+adminControls+(state.role==="admin"?'<button class="ghost-button" data-project-lifecycle="'+(p.lifecycle==="Archived"?'Active':'Archived')+'">'+icon(p.lifecycle==="Archived"?"archive-restore":"archive")+(p.lifecycle==="Archived"?'Restore Project':'Archive Project')+'</button><button class="ghost-button" data-edit="project" data-index="-1">'+icon("square-pen")+'Edit Project</button><button class="ghost-button" id="editScope">'+icon("sliders-horizontal")+'Edit Scope</button>':'')+'<button class="ghost-button" onclick="window.print()">'+icon("printer")+'Print / PDF</button></div></div></section>'+
+    '<div class="project-section-toolbar"><div><span class="section-kicker">PROJECT WORKSPACE</span><strong>Sections</strong></div><div><button data-project-sections="expand">'+icon("unfold-vertical")+'Expand All</button><button data-project-sections="collapse">'+icon("fold-vertical")+'Collapse All</button></div></div>'+
     '<div class="project-layout"><div class="detail-stack">'+
-      '<section class="panel"><div class="panel-head"><h3>Project Overview</h3>'+(state.role==="admin"?'<button data-edit="project" data-index="-1">'+icon("pencil")+' Edit overview</button>':'<span class="pill '+priorityClass(p.priority)+'">'+esc(p.priority)+'</span>')+'</div><p class="overview-summary">'+esc(p.summary)+'</p><div class="overview-grid">'+
-      [["Project Number",p.number],["Project Type",p.type],["Project Area",p.area],["Client",p.client],["Owner",p.owner],["General Contractor",p.contractor],["Address",p.address],["Current Status",p.status],["Priority",p.priority]].map(function(x){return '<div class="info-cell"><small>'+esc(x[0])+'</small><strong>'+esc(x[1])+'</strong></div>'}).join("")+
-      '</div></section>'+
-      '<section class="panel"><div class="panel-head"><h3>Project Scope</h3>'+(state.role==="admin"?'<button id="editScopeInline">Edit stages</button>':'')+'</div><div class="scope-stage-list">'+scope+'</div><div id="stageContent" class="stage-content">'+renderStageContent(p,activeStage)+'</div></section>'+
-      renderProjectMeetings(p)+
-      '<section class="panel"><div class="panel-head"><div><h3>Project Schedule</h3><small>Dated stages show sequence and overlap</small></div>'+(state.role==="admin"?'<button data-add="schedule">'+icon("plus")+' Add schedule item</button>':'')+'</div>'+renderProjectSchedule(p)+'</section>'+
-      '<section class="panel"><div class="panel-head"><h3>Project Team</h3>'+(state.role==="admin"?'<button data-add="team">'+icon("user-plus")+' Add team member</button>':'<span class="pill">'+p.assigned.length+' assigned users</span>')+'</div><div class="team-grid">'+p.team.map(teamCard).join("")+'</div></section>'+
-      '<section class="panel"><div class="panel-head"><h3>Project Companies</h3>'+(state.role==="admin"?'<button data-add="companies">'+icon("building-2")+' Add company</button>':'<span>'+p.companies.length+' companies</span>')+'</div><div class="company-grid">'+p.companies.map(companyCard).join("")+'</div></section>'+
+      projectAccordion(p,"overview","Project Overview","Core project identity and current delivery status","layout-dashboard",overviewBody,state.role==="admin"?'<button class="section-action" data-edit="project" data-index="-1">'+icon("pencil")+'Edit</button>':'')+
+      projectAccordion(p,"workflow","Project Delivery","Scope, permit, tender and construction administration","workflow",workflowBody,state.role==="admin"?'<button class="section-action" id="editScopeInline">Edit stages</button>':'')+
+      projectAccordion(p,"meetings","Project Meetings","Minutes, decisions and task-linked action items","calendar-clock",renderProjectMeetings(p))+
+      projectAccordion(p,"schedule","Project Schedule","Stage dates, milestones and project deadlines","gantt-chart-square",renderProjectSchedule(p),state.role==="admin"?'<button class="section-action" data-add="schedule">'+icon("plus")+'Add schedule item</button>':'')+
+      projectAccordion(p,"team","Project Team",p.assigned.length+' assigned workspace members',"users",teamBody,state.role==="admin"?'<button class="section-action" data-add="team">'+icon("user-plus")+'Add</button>':'')+
+      projectAccordion(p,"companies","Project Companies",p.companies.length+' client, consultant and contractor records',"building-2",companiesBody,state.role==="admin"?'<button class="section-action" data-add="companies">'+icon("plus")+'Add</button>':'')+
+      projectAccordion(p,"documents","Documents",p.documents.length+' project files',"files",documentsBody,state.role==="admin"?'<button class="section-action" data-add="documents">'+icon("plus")+'Add</button>':'')+
+      projectAccordion(p,"activity","Activity","Project history and recorded updates","activity",activityBody,state.role==="admin"?'<button class="section-action" data-add="activity">'+icon("plus")+'Add</button>':'')+
     '</div><aside class="detail-stack">'+
-      '<section class="panel notes-box"><div class="panel-head"><h3>Project Notes</h3>'+icon("sticky-note")+'</div><textarea id="projectNotes" aria-label="Project Notes" '+(state.role==="admin"?'':'readonly ')+'placeholder="Add project notes…">'+esc(p.notes)+'</textarea><small class="save-hint">'+(state.role==="admin"?'Saved automatically in this browser.':'Read-only for assigned users.')+'</small></section>'+
-      '<section class="panel"><div class="panel-head"><h3>Project Tasks</h3>'+(state.role==="admin"?'<button data-add="tasks">'+icon("plus")+' Add task</button>':'<span class="pill high">'+p.tasks.filter(function(t){return !t[4]}).length+' open</span>')+'</div><div class="task-list">'+tasks+'</div></section>'+
+      projectAccordion(p,"notes","Project Notes","Workspace notes saved with this project","sticky-note",notesBody)+
+      projectAccordion(p,"tasks","Project Tasks",p.tasks.filter(function(t){return !t[4]}).length+' open tasks',"list-checks",taskBody,state.role==="admin"?'<button class="section-action" data-add="tasks">Add task</button>':'')+
     '</aside></div>';
   document.getElementById("content").innerHTML=html;
   document.querySelectorAll("[data-stage]").forEach(function(b){b.addEventListener("click",function(){activeStage=b.dataset.stage;renderProject(p.id);document.querySelector('[data-stage="'+activeStage+'"]').focus({preventScroll:true})})});
+  document.querySelectorAll("[data-toggle-project-section]").forEach(function(button){button.addEventListener("click",function(){var map=state.ui.projectSections[p.id]||{};map[button.dataset.toggleProjectSection]=!sectionIsOpen(p,button.dataset.toggleProjectSection);state.ui.projectSections[p.id]=map;saveState();renderProject(p.id);var next=document.querySelector('[data-toggle-project-section="'+button.dataset.toggleProjectSection+'"]');if(next)next.focus({preventScroll:true});});});
+  document.querySelectorAll("[data-project-sections]").forEach(function(button){button.addEventListener("click",function(){var open=button.dataset.projectSections==="expand",map=state.ui.projectSections[p.id]||{};PROJECT_SECTION_KEYS.forEach(function(key){map[key]=open;});state.ui.projectSections[p.id]=map;saveState();renderProject(p.id);});});
   document.querySelectorAll("[data-task]").forEach(function(b){b.addEventListener("click",function(){var task=p.tasks.find(function(t){return t[0]===b.dataset.task});task[4]=!task[4];saveState();renderProject(p.id);toast(task[4]?"Task marked complete":"Task reopened")})});
-  if(state.role==="admin")document.getElementById("projectNotes").addEventListener("input",function(e){p.notes=e.target.value;saveState();document.querySelector('.notes-box .save-hint').textContent="All changes saved in this browser.";});
+  var notesField=document.getElementById("projectNotes");if(state.role==="admin"&&notesField)notesField.addEventListener("input",function(e){p.notes=e.target.value;saveState();var hint=document.querySelector('[data-project-section="notes"] .save-hint');if(hint)hint.textContent="All changes saved in this browser.";});
   if(state.role==="admin"){
+    document.querySelector("[data-project-lifecycle]").addEventListener("click",function(buttonEvent){var next=buttonEvent.currentTarget.dataset.projectLifecycle;if(!confirm((next==="Archived"?"Archive":"Restore")+" this project? No records will be deleted."))return;p.lifecycle=next;saveState();currentProjectLifecycle=next;renderProject(p.id);toast(next==="Archived"?"Project archived — all data preserved":"Project restored to Active Projects");});
     document.getElementById("statusSelect").addEventListener("change",function(e){p.status=e.target.value;saveState();renderProject(p.id);toast("Project status updated")});
     document.getElementById("prioritySelect").addEventListener("change",function(e){p.priority=e.target.value.split(" ")[0];saveState();renderProject(p.id);toast("Project priority updated")});
     document.getElementById("editScope").addEventListener("click",function(){openScope(p.id)});
@@ -974,14 +1042,15 @@ function editorConfig(project,kind,index,stageKey){
     return {title:"Edit My Header Images",description:"These images belong only to your personal workspace. Company branding remains admin-controlled.",fields:selfFields,validate:function(v){return Object.keys(v).every(function(key){return /^https:\/\/\S+$/i.test(v[key]);})?"":"Use secure HTTPS image URLs.";},save:function(v){Object.assign(item,v);applyRoleNavigation(item);}};
   }
   if(kind==="workspaceGeneral")return {title:"General Workspace Settings",description:"Permissions and workspace-wide defaults. These controls are available to admins only.",fields:[{name:"workspaceTitle",label:"Application Header Title",value:state.workspace.general.workspaceTitle,wide:true},{name:"timezone",label:"Workspace Timezone",value:state.workspace.general.timezone},{name:"dateFormat",label:"Date Format",value:state.workspace.general.dateFormat},{name:"memberCanEditPhoto",label:"Members may edit their own profile image",type:"checkbox",value:state.workspace.permissions.memberCanEditPhoto},{name:"memberCanEditBanner",label:"Members may edit their own personal banner",type:"checkbox",value:state.workspace.permissions.memberCanEditBanner}],save:function(v){state.workspace.general.workspaceTitle=v.workspaceTitle;state.workspace.general.timezone=v.timezone;state.workspace.general.dateFormat=v.dateFormat;state.workspace.permissions.memberCanEditPhoto=v.memberCanEditPhoto;state.workspace.permissions.memberCanEditBanner=v.memberCanEditBanner;state.settings.workspaceTitle=v.workspaceTitle;}};
+  if(kind==="projectType")return {title:"Add Project Category or Subtype",description:"Choose an existing category to add a subtype, or enter a new category. This registry belongs to the current workspace.",fields:[{name:"category",label:"Category",value:"",wide:true},{name:"subtype",label:"Optional Subtype",value:"",wide:true,required:false}],validate:function(v){return String(v.category||"").trim()?"":"Category is required.";},save:function(v){var name=String(v.category).trim(),subtype=String(v.subtype||"").trim(),group=state.projectTypes.find(function(type){return type.name.toLowerCase()===name.toLowerCase();});if(!group){group={name:name,subtypes:[],workspaceId:state.activeWorkspaceId};state.projectTypes.push(group);}if(subtype&&!group.subtypes.some(function(item){return item.toLowerCase()===subtype.toLowerCase();}))group.subtypes.push(subtype);state.projectTypes.sort(function(a,b){return a.name.localeCompare(b.name);});}};
   if(kind==="companyLogo"){
     item=project&&project.companies[index];if(!item)return null;
     return {title:"Edit "+item.name+" Logo",description:"This logo stays attached to the company record inside "+project.number+".",fields:[{name:"logo",label:"Company Logo URL",type:"url",value:item.logo||"",wide:true,required:false}],validate:function(v){return !v.logo||/^https:\/\/\S+$/i.test(v.logo)?"":"Use a secure HTTPS image URL.";},save:function(v){item.logo=v.logo;}};
   }
   function stageChoices(){return project.scope.map(function(k){return [k,stageLabel(k)]});}
   if(kind==="project")return {title:"Edit Project Information",description:"Update overview, access and the project image.",fields:[
-    {name:"number",label:"Project Number",value:project.number},{name:"name",label:"Project Name",value:project.name},{name:"address",label:"Address",value:project.address},{name:"type",label:"Project Type",value:project.type},{name:"area",label:"Project Area",value:project.area},{name:"client",label:"Client",value:project.client},{name:"owner",label:"Owner",value:project.owner},{name:"contractor",label:"General Contractor",value:project.contractor},{name:"status",label:"Current Status",value:project.status},{name:"priority",label:"Priority",type:"select",options:[["High","High"],["Medium","Medium"],["Low","Low"]],value:project.priority},{name:"image",label:"Project Image URL",value:project.image,wide:true},{name:"summary",label:"Project Scope Summary",type:"textarea",value:project.summary,wide:true},{name:"assigned",label:"Assigned Users",type:"checks",options:Object.keys(USERS).map(function(k){return [k,USERS[k].name]}),value:project.assigned,wide:true}
-  ],save:function(v){Object.keys(v).forEach(function(k){project[k]=v[k]})}};
+    {name:"number",label:"Project Number",value:project.number},{name:"name",label:"Project Name",value:project.name},{name:"address",label:"Address",value:project.address},{name:"typeCategory",label:"Project Type Category",type:"select",options:state.projectTypes.map(function(type){return [type.name,type.name];}),value:project.typeCategory},{name:"typeSubtype",label:"Project Subtype",value:project.typeSubtype||"",required:false},{name:"area",label:"Project Area",value:project.area},{name:"client",label:"Client",value:project.client},{name:"owner",label:"Owner",value:project.owner},{name:"contractor",label:"General Contractor",value:project.contractor},{name:"status",label:"Current Status",value:project.status},{name:"priority",label:"Priority",type:"select",options:[["High","High"],["Medium","Medium"],["Low","Low"]],value:project.priority},{name:"image",label:"Project Image URL",value:project.image,wide:true},{name:"summary",label:"Project Scope Summary",type:"textarea",value:project.summary,wide:true},{name:"assigned",label:"Assigned Users",type:"checks",options:Object.keys(USERS).map(function(k){return [k,USERS[k].name]}),value:project.assigned,wide:true}
+  ],save:function(v){Object.keys(v).forEach(function(k){project[k]=v[k]});project.type=project.typeSubtype||project.typeCategory;var group=state.projectTypes.find(function(type){return type.name===project.typeCategory;});if(group&&project.typeSubtype&&group.subtypes.indexOf(project.typeSubtype)<0)group.subtypes.push(project.typeSubtype);}};
   if(kind==="team"){
     item=creating?{id:uid("team"),role:"Consultant",name:""}:project.team[index];
     return {title:creating?"Add Team Member":"Edit Team Member",fields:[{name:"role",label:"Role / Discipline",value:item.role},{name:"name",label:"Name / Company",value:item.name},{name:"email",label:"Email",type:"email",value:item.email||"",required:false},{name:"phone",label:"Phone",type:"tel",value:item.phone||"",required:false}],save:function(v){Object.assign(item,v);if(creating)project.team.push(item)}};
@@ -1079,7 +1148,7 @@ function saveEditor(form){
   if(!editContext)return;var data=new FormData(form),values={};
   editContext.config.fields.forEach(function(f){if(f.type==="checks")values[f.name]=data.getAll(f.name);else if(f.type==="checkbox")values[f.name]=data.has(f.name);else values[f.name]=data.get(f.name)});
   var error=editContext.config.validate?editContext.config.validate(values):"";if(error){toast(error);return}
-  editContext.config.save(values);saveState();var project=editContext.project,kind=editContext.kind;if(kind==="memberProfile")populateWelcomeUsers();closeEditor();if(kind==="companyLogo"||kind==="settings"||kind==="workspaceGeneral")renderSettingsPage();else if(kind==="memberProfile"){if(currentView==="members")renderMembersPage();else if(currentView==="settings")renderSettingsPage();else renderDashboard();}else if(kind==="memberSelf")renderDashboard();else if(project)renderProject(project.id);toast("Changes saved");
+  editContext.config.save(values);saveState();var project=editContext.project,kind=editContext.kind;if(kind==="memberProfile")populateWelcomeUsers();closeEditor();if(kind==="companyLogo"||kind==="settings"||kind==="workspaceGeneral"||kind==="projectType")renderSettingsPage();else if(kind==="memberProfile"){if(currentView==="members")renderMembersPage();else if(currentView==="settings")renderSettingsPage();else renderDashboard();}else if(kind==="memberSelf")renderDashboard();else if(project)renderProject(project.id);toast("Changes saved");
 }
 function deleteRecord(project,kind,index,stageKey){
   if(!confirm("Delete this record?"))return;
@@ -1164,7 +1233,7 @@ function bindCommon(){
 }
 function resetDemoData(){
   if(!confirm("Reset all prototype edits saved in this browser?"))return;
-  state={role:state.role,userId:state.userId,projects:clone(INITIAL_PROJECTS),settings:clone(DEFAULT_SETTINGS),workspace:clone(DEFAULT_WORKSPACE),members:clone(INITIAL_MEMBERS)};
+  state={role:state.role,userId:state.userId,activeWorkspaceId:DEFAULT_WORKSPACE.id,projects:clone(INITIAL_PROJECTS),settings:clone(DEFAULT_SETTINGS),workspace:clone(DEFAULT_WORKSPACE),members:clone(INITIAL_MEMBERS),projectTypes:clone(DEFAULT_PROJECT_TYPES),ui:{scheduleScale:"Month",projectSections:{}}};
   USERS=state.members;state.projects.forEach(normalizeProject);saveState();applyWorkspaceSettings();renderRoleNavigation();currentProjectId=null;adminMemberFilter=null;currentView="dashboard";render();toast("Demo workspace reset");
 }
 function populateWelcomeUsers(){
