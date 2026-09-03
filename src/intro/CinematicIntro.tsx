@@ -3,6 +3,14 @@ import { Box } from 'lucide-react';
 import { INTRO } from './videoConfig';
 
 export function CinematicIntro() {
+  const getBranding = () => (window as Window & { hosisBranding?: { name: string; logo: string } }).hosisBranding;
+  const [branding, setBranding] = useState(getBranding);
+  useEffect(() => {
+    const update = () => setBranding(getBranding());
+    document.addEventListener('hosis:branding', update);
+    update();
+    return () => document.removeEventListener('hosis:branding', update);
+  }, []);
   const surface = useRef<HTMLElement>(null);
   const frame = useRef<number>();
   const [reducedMotion, setReducedMotion] = useState(() => window.matchMedia('(prefers-reduced-motion: reduce)').matches);
@@ -55,8 +63,8 @@ export function CinematicIntro() {
 
       <header className="cinematic-topline">
         <div className="cinematic-logo">
-          <Box size={30} strokeWidth={1.25} aria-hidden="true" />
-          <span>{INTRO.brand}<small>{INTRO.brandDescriptor}</small></span>
+          {branding?.logo ? <img className="cinematic-company-logo" src={branding.logo} alt="Company logo" /> : <Box size={30} strokeWidth={1.25} aria-hidden="true" />}
+          <span>{branding?.name || INTRO.brand}<small>{INTRO.brandDescriptor}</small></span>
         </div>
         <span className="cinematic-study">{INTRO.studyLabel}</span>
       </header>
