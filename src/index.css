@@ -3,7 +3,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Hosis intro and existing role entry are intentionally separate surfaces. */
+/* Cinematic Hosis intro with the existing role entry layered on the same surface. */
 #intro {
   position: relative;
   min-height: 100dvh;
@@ -11,21 +11,7 @@
   isolation: isolate;
   background: #071018;
 }
-#intro::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  opacity: 0;
-  background:
-    linear-gradient(90deg,rgba(5,14,22,.68),rgba(5,14,22,.28) 45%,rgba(5,14,22,.75)),
-    linear-gradient(0deg,rgba(5,14,22,.78),transparent 52%),
-    var(--entry-image) center / cover no-repeat;
-  transition: opacity .7s ease;
-}
-#intro.entry-mode::before { opacity: 1; }
-#introRoot { position: fixed; inset: 0; z-index: 10; }
-#intro.entry-mode #introRoot { pointer-events: none; }
+#introRoot { position: fixed; inset: 0; z-index: 1; }
 #introRoot, #introRoot button { font-family: Inter, sans-serif; }
 #introRoot button { font: inherit; }
 
@@ -41,12 +27,6 @@
   opacity: 1;
   transition: opacity .72s cubic-bezier(.22,1,.36,1), visibility .72s ease, transform .72s cubic-bezier(.22,1,.36,1);
   touch-action: pan-y;
-}
-#introRoot .cinematic.is-leaving {
-  opacity: 0;
-  visibility: hidden;
-  transform: scale(1.012);
-  pointer-events: none;
 }
 #introRoot .cinematic-visual,
 #introRoot .cinematic-sketch,
@@ -175,37 +155,6 @@
   opacity: 0;
   animation: cinematic-rise .85s .96s ease forwards;
 }
-#introRoot .cinematic-enter {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 14px;
-  min-height: 48px;
-  margin-top: 30px;
-  padding: 13px 20px;
-  border: 1px solid rgba(225,238,244,.55);
-  border-radius: 4px;
-  background: rgba(6,17,25,.66);
-  color: #f5f3ed;
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: .14em;
-  cursor: pointer;
-  backdrop-filter: blur(8px);
-  opacity: 0;
-  animation: cinematic-rise .85s 1.12s ease forwards;
-  transition: color .2s ease, background .2s ease, border-color .2s ease, transform .2s ease;
-}
-#introRoot .cinematic-enter:hover {
-  color: #071018;
-  background: #d8edf6;
-  border-color: #d8edf6;
-  transform: translateY(-2px);
-}
-#introRoot .cinematic-enter:focus-visible {
-  outline: 3px solid #bdeaff;
-  outline-offset: 4px;
-}
 #introRoot .cinematic-footerline {
   position: absolute;
   left: clamp(22px,4vw,64px);
@@ -238,26 +187,19 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* Existing Admin / Member role entry, revealed only after Enter Workspace. */
+/* Existing Admin / Member role entry remains interactive above the intro. */
 .entry-welcome {
   position: relative;
-  z-index: 2;
+  z-index: 3;
   min-height: 100dvh;
   display: grid;
   grid-template-columns: 1fr minmax(340px,470px);
   align-items: center;
   padding: 70px 5vw;
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
-  transform: translateY(12px);
-  transition: opacity .55s .08s ease, transform .55s .08s ease;
-}
-#intro.entry-mode .entry-welcome {
   opacity: 1;
   visibility: visible;
-  pointer-events: auto;
-  transform: translateY(0);
+  pointer-events: none;
+  animation: cinematic-rise .8s .72s ease both;
 }
 .entry-panel {
   grid-column: 2;
@@ -269,6 +211,7 @@
   backdrop-filter: blur(14px);
   color: #fff;
   box-shadow: 0 20px 60px rgba(7,17,25,.22);
+  pointer-events: auto;
 }
 .entry-panel .eyebrow { font-size: 9px; color: #b8d3e3; letter-spacing: .16em; }
 .entry-panel h1 { margin: 18px 0; font-family: Inter,sans-serif; font-size: clamp(29px,2.7vw,39px); font-weight: 500; line-height: 1.12; letter-spacing: -.045em; text-wrap: balance; }
@@ -305,11 +248,7 @@
   #introRoot .cinematic-logo > svg { width: 25px; }
   #introRoot .cinematic-logo > span { font-size: 16px; }
   #introRoot .cinematic-study { display: none; }
-  #introRoot .cinematic-copy { left: 20px; bottom: 104px; width: calc(100% - 40px); }
-  #introRoot .cinematic-kicker { margin-bottom: 13px; font-size: 10px; line-height: 1.5; }
-  #introRoot .cinematic-copy h1 { font-size: clamp(42px,15vw,64px); }
-  #introRoot .cinematic-supporting { max-width: 430px; margin-top: 18px; font-size: 15px; line-height: 1.5; }
-  #introRoot .cinematic-enter { width: 100%; margin-top: 22px; }
+  #introRoot .cinematic-copy { display: none; }
   #introRoot .cinematic-footerline { left: 20px; right: 20px; bottom: max(18px,env(safe-area-inset-bottom)); }
   #introRoot .cinematic-footerline > span:first-child { display: none; }
   #introRoot .cinematic-reveal-hint { width: 100%; text-align: center; font-size: 10px; }
@@ -317,11 +256,16 @@
   .entry-panel { grid-column: 1; max-width: 470px; margin: 0 auto; padding: 22px; }
   .entry-panel h1 { font-size: 32px; }
 }
+@media(min-width:768px) and (max-width:1100px) {
+  #introRoot .cinematic-copy { left: 4vw; width: min(42vw,430px); }
+  #introRoot .cinematic-copy h1 { font-size: clamp(42px,6.2vw,66px); }
+  #introRoot .cinematic-supporting { max-width: 390px; font-size: 15px; }
+  .entry-welcome { grid-template-columns: 1fr minmax(350px,430px); padding-inline: 4vw; }
+}
 @media(max-height:650px) {
   #introRoot .cinematic-copy { bottom: 74px; }
   #introRoot .cinematic-copy h1 { font-size: 38px; }
   #introRoot .cinematic-supporting { display: none; }
-  #introRoot .cinematic-enter { margin-top: 18px; }
   #introRoot .cinematic-footerline { bottom: 12px; }
   .entry-welcome { align-items: start; padding-top: 18px; padding-bottom: 18px; }
   .entry-panel { padding: 20px; }
@@ -337,7 +281,6 @@
   #introRoot .cinematic-kicker,
   #introRoot .cinematic-copy h1,
   #introRoot .cinematic-supporting,
-  #introRoot .cinematic-enter,
   #introRoot .cinematic-footerline { opacity: 1; transform: none; }
   #introRoot .cinematic-render-mask {
     -webkit-mask-image: radial-gradient(circle clamp(210px,30vw,440px) at var(--reveal-x) var(--reveal-y),#fff 0 45%,rgba(255,255,255,.74) 70%,transparent 100%);

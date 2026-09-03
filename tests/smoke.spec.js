@@ -1,13 +1,12 @@
 const { test, expect } = require("@playwright/test");
 
-async function skipIntro(page) {
+async function openEntry(page) {
   await page.goto("http://127.0.0.1:4173", { waitUntil: "domcontentloaded" });
-  await page.getByRole("button", { name: /Enter Workspace/i }).click();
   await expect(page.getByRole("heading", { name: /Architecture in motion.*Projects under control/i })).toBeVisible();
 }
 
 test("admin can navigate projects, tasks, scope and assistant", async ({ page }) => {
-  await skipIntro(page);
+  await openEntry(page);
   await page.getByRole("button", { name: /Continue as Admin/i }).click();
   await expect(page.getByRole("heading", { name: /Project intelligence/i })).toBeVisible();
 
