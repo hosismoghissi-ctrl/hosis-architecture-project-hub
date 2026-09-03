@@ -251,7 +251,7 @@
   visibility: hidden;
   pointer-events: none;
   transform: translateY(12px);
-  transition: opacity .55s .08s ease, visibility .55s ease, transform .55s .08s ease;
+  transition: opacity .55s .08s ease, transform .55s .08s ease;
 }
 #intro.entry-mode .entry-welcome {
   opacity: 1;
