@@ -645,6 +645,7 @@ function applyRoleNavigation(user){
   applyWorkspaceSettings();
 }
 function launch(role,userId){
+  [taskFilters,fileFilters].forEach(function(filters){Object.keys(filters).forEach(function(key){filters[key]='';});});fileGrouping=false;
   state.role=role;state.userId=role==="admin"?null:userId;saveState();
   document.getElementById("intro").classList.add("hidden");document.dispatchEvent(new Event("hosis:intro:closed"));document.getElementById("app").classList.remove("hidden");
   adminMemberFilter=null;

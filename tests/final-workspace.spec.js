@@ -103,14 +103,19 @@ test('consultant profile edits preserve contacts and company logo on project', a
 });
 test('member navigation, files and linked company profiles exclude unassigned projects', async ({ page }) => {
   await admin(page); const s = await state(page);
+  const unassigned=s.projects.find(p=>!p.assigned.includes('maya'));
+  await page.locator('[data-view="tasks"]').click();await page.locator('[data-task-filter="project"]').selectOption(unassigned.id);
+  await page.locator('[data-view="files"]').click();await page.locator('[data-file-filter="project"]').selectOption(unassigned.id);
   await page.getByLabel('Switch role').click(); await page.locator('#welcomeUser').selectOption('maya'); await page.locator('#continueUser').click();
   await expect(page.locator('[data-view="settings"]')).toHaveCount(0);
   for (const route of ['gallery', 'tasks', 'schedule', 'meetings', 'expenses', 'files', 'dashboard']) {
     await page.locator(`[data-view="${route}"]`).click(); await expect(page.locator('#content')).not.toBeEmpty();
   }
   await page.locator('[data-view="files"]').click();
+  await expect(page.locator('[data-file-filter="project"]')).toHaveValue('');
   await expect(page.locator('[data-upload-document]')).toHaveCount(0);
   const ids = await page.locator('.file-table [data-project]').evaluateAll(items => items.map(item => item.dataset.project));
+  expect(ids.length).toBeGreaterThan(0);
   expect(ids.every(id => s.projects.find(p => p.id === id).assigned.includes('maya'))).toBe(true);
   await page.locator('.file-table [data-project]').first().click();
   await page.locator('[data-company-profile]').first().click();
