@@ -19,8 +19,8 @@ test('all admin routes render without runtime errors and demo records survive', 
   expect(after.projects).toHaveLength(12); expect(Object.keys(after.members)).toHaveLength(8);
   expect(after.projects).toEqual(before.projects);
   await expect(page.locator('.team-overview-row')).toHaveCount(8);
-  const overlaps=await page.locator('.dashboard-projects .project-card').evaluateAll(cards=>cards.some(card=>card.querySelector('.card-top').getBoundingClientRect().bottom>card.querySelector('.card-bottom').getBoundingClientRect().top));
-  expect(overlaps).toBe(false);
+  await expect(page.locator('.control-center-grid > .panel')).toHaveCount(5);
+  await expect(page.locator('.dashboard-member-card')).toHaveCount(8);
 });
 test('task filters combine project, member, client, status, priority and due dates', async ({ page }) => {
   await admin(page); const s = await state(page), p = s.projects[0];

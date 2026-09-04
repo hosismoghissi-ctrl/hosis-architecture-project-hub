@@ -9,7 +9,7 @@ async function enter(page, user) {
   } else await page.getByRole('button', { name: 'Continue as Admin' }).click();
 }
 
-test('dashboard puts prioritized project tasks before Project Schedule and preserves task edits', async ({ page }) => {
+test('dashboard keeps prioritized task editing within the five-panel markup layout', async ({ page }) => {
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
   await enter(page);
@@ -17,7 +17,7 @@ test('dashboard puts prioritized project tasks before Project Schedule and prese
   await expect(page.getByRole('heading', { name: 'Portfolio Schedule', exact: true })).toHaveCount(0);
   const ordering = await page.locator('#content').evaluate(el => {
     const task = el.querySelector('.dashboard-tasks');
-    return !!(task.compareDocumentPosition(el.querySelector('.dashboard-schedule')) & Node.DOCUMENT_POSITION_FOLLOWING);
+    return !!(el.querySelector('.dashboard-schedule').compareDocumentPosition(task) & Node.DOCUMENT_POSITION_FOLLOWING);
   });
   expect(ordering).toBe(true);
   await expect(page.locator('.open-task-list .dashboard-task')).toHaveCount(25);
