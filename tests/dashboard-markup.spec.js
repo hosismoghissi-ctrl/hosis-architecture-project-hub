@@ -64,6 +64,11 @@ test('Add Member persists without replacing demo records and supports member ent
   expect(id).toBeTruthy();expect(after.members[id].workspaceId).toBe(after.workspace.id);
   expect(after.projects).toEqual(before.projects);
   for(const id of Object.keys(before.members))expect(after.members[id]).toEqual(before.members[id]);
+  await page.locator('.dashboard-member-card').filter({hasText:'Jordan Avery'}).click();
+  await page.getByRole('button',{name:'Edit profile',exact:true}).click();
+  await page.getByLabel('Job Title',{exact:true}).fill('Senior Project Coordinator');
+  await page.getByRole('button',{name:'Save Changes'}).click();
+  await expect(page.locator('.member-personal-header')).toContainText('Senior Project Coordinator');
   await page.reload();await page.locator('#welcomeUser').selectOption(id);await page.locator('#continueUser').click();
   await expect(page.getByRole('heading',{name:'Welcome, Jordan',exact:true})).toBeVisible();
   await expect(page.locator('.dashboard-projects .project-card')).toHaveCount(0);
