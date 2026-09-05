@@ -16,7 +16,7 @@ async function openProject(page, id) {
 test('expanded simulation includes eight members and twelve projects', async ({ page }) => {
   await enterAdmin(page);
   await expect(page.locator('.team-overview-row')).toHaveCount(8);
-  await expect(page.locator('.dashboard-projects .project-card')).toHaveCount(12);
+  await expect(page.locator('.compact-project-list [data-project]')).toHaveCount(12);
   await page.locator('[data-view="members"]').click();
   await expect(page.locator('.members-table-row')).toHaveCount(8);
 });
